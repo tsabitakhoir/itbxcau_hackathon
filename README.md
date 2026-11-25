@@ -1,34 +1,47 @@
-# GIL prototype
+# GIL:ON — safer walks after dark
 
-Mobile-first prototype for comparing walking route candidates with an explainable, rule-based estimate.
+Mobile-first web app (ITB × CAU Hackathon 2026) that compares the **fastest** and the **safest** walking route at night, explains the score, and adds SOS, trip sharing and community hazard reports. Rule-based, no AI. All map data is **simulated around ITB Bandung**.
 
-The interface supports Bahasa Indonesia, English, and Korean. The language choice is remembered in the browser.
+UI follows the English frames of the team Figma file (GIL:ON, light theme). Copy is available in English, Bahasa Indonesia and Korean (switch in Profile).
 
-## Run locally
+## Run
 
-Serve this directory over localhost (browser geolocation requires a secure context):
-
-```powershell
-python -m http.server 4173
+```bash
+npm install
+cp .env.example .env.local   # VITE_USE_MOCK=true, VITE_DEMO_MODE=true
+npm run dev                  # http://localhost:5173
+npm run build                # production build in dist/
 ```
 
-Open `http://localhost:4173` on the development machine. For phone access, deploy to an HTTPS static host and open its link/QR code on the phone.
+Deploy: import the repo in Vercel (framework: Vite). `vercel.json` rewrites all routes to `index.html`. HTTPS is required for geolocation on phones.
 
-## Data flow
+## Screens (IDs from the design)
 
-- Walking route candidates: FOSSGIS OpenStreetMap Germany public OSRM demo, foot profile.
-- Street and point features: one Overpass query for the route bounding box, cached locally for six hours.
-- Community reports: browser local storage for this prototype; not synchronized between phones.
-- Seoul official route / safety facility data: load a locally converted GeoJSON file from the “Sumber & metode” section. The source page provides SHP downloads; convert to WGS84 GeoJSON before loading.
+| URL | Screen |
+| --- | --- |
+| `/` | S-01 splash + face scan (mockup) |
+| `/onboarding`, `/verify`, `/contacts` | S-02 language/country, S-03 ID verification (mockup), S-04 emergency contacts |
+| `/map` | C-01 home map, activity heatmap toggle, hazard markers, SOS |
+| `/plan` | C-02 plan route (start, demo places, departure time in 15-min steps) |
+| `/routes`, `/routes/:kind` | C-03 compare routes, C-04 safety score details |
+| `/walk/:tripId` | C-05 walking mode (live location push, wake lock) |
+| `/sos` | C-06 SOS (3 s countdown, call + share) |
+| `/t/:token` | C-07 shared route for a friend (no sign-in, late/SOS banners) |
+| `/arrived/:tripId` | C-08 arrival & rating |
+| `/report/new`, `/report/:id` | S-05 hazard report + confirm |
+| `/profile` | S-06 profile & settings |
 
-## Score model
+## Structure
 
-Lighting 30%, 24/7 nearby facilities 25%, major-road proxy 20%, community reports 25%. Missing OSM tags are treated as unknown, not as “dark” or “unsafe”; the card reports the proportion of scoring weight available. The “major road” and facility factors are rough prototypes, not validated safety evidence. The score is an estimate and not a guarantee of safety.
+- `src/core/types.ts`, `src/core/config.ts` — shared BE/FE contract (see `context/fe.md` in the project). Only change by BE + FE agreement.
+- `src/api/index.ts` — API entry point. Currently re-exports `src/api/mock.ts`, which implements every contract function with simulated data (localStorage, so the share link works across tabs of one browser). BE swaps in the real Supabase + `src/core` scoring/Dijkstra here.
+- `src/pages/*` — one file per screen. `src/components/*` — map, route lines, markers, shared UI.
+- `src/styles/tokens.css` — design tokens from Figma; Tailwind maps them in `tailwind.config.js`. No hex colors in components.
+- `src/i18n/{en,id,ko}.ts` — all UI text.
 
-## Prototype limitations
+## Notes
 
-- No user accounts or cross-device live location.
-- Reports are local to the current browser and are not verified.
-- Public OSM demo services have no uptime guarantee and are for reasonable demo use; a production version needs a dependable routing and data provider.
-- The UI country selector changes the pilot location and emergency dial link; it does not change the current browser locale.
-- SOS starts a phone call. It does not send location to police or contacts.
+- Scores in the contract are 1.0–5.0; the design shows points out of 100, so the UI shows `score × 20`.
+- `VITE_DEMO_MODE=true` means SOS never really calls 110/112.
+- Mockups only: face scan, ID verification. Nothing from the camera is recorded or stored.
+- Scores are estimates, not a guarantee of safety.
