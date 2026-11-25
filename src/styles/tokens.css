@@ -1,0 +1,34 @@
+/* Design tokens from the Figma EN frames (GIL:ON, light theme).
+   Names follow the Figma color roles; values are "R G B" so Tailwind can apply alpha. */
+:root {
+  --color-bg: 247 249 252;          /* #f7f9fc */
+  --color-surface: 255 255 255;     /* #ffffff */
+  --color-surface-2: 240 243 248;   /* #f0f3f8 chips, place tiles */
+  --color-surface-3: 243 245 249;   /* #f3f5f9 fastest card */
+  --color-border: 205 214 227;      /* #cdd6e3 handles, toggles */
+  --color-line: 229 234 241;        /* #e5eaf1 progress track, dividers */
+  --color-text: 38 51 72;           /* #263348 */
+  --color-text-muted: 115 128 150;  /* #738096 */
+  --color-map-label: 135 145 159;   /* #87919f */
+  --color-primary: 82 125 208;      /* #527dd0 buttons, my location */
+  --color-primary-strong: 64 103 183; /* #4067b7 selected text */
+  --color-primary-soft: 237 243 254;  /* #edf3fe info boxes */
+  --color-primary-soft-2: 233 240 254;/* #e9f0fe selected place */
+  --color-on-primary: 255 255 255;
+  --color-safe: 38 132 80;          /* #268450 safest text */
+  --color-safe-line: 67 167 111;    /* #43a76f safest route, bars */
+  --color-safe-soft: 237 247 240;   /* #edf7f0 safest card */
+  --color-caution: 166 122 11;      /* #a67a0b fastest text */
+  --color-caution-line: 228 183 53; /* #e4b735 fastest route, construction marker */
+  --color-caution-soft: 255 247 223;/* #fff7df report penalty, late banner */
+  --color-danger: 217 71 87;        /* #d94757 SOS, hazard marker */
+  --color-danger-text: 206 63 80;   /* #ce3f50 */
+  --color-danger-soft: 255 240 242; /* #fff0f2 */
+  --color-star-empty: 226 232 240;
+  --color-route-fast: var(--color-caution-line);
+  --color-route-safe: var(--color-safe-line);
+  --radius-card: 14px;
+  --radius-route-card: 16px;
+  --radius-sheet: 24px;
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans KR', sans-serif;
+}

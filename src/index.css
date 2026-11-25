@@ -1,0 +1,30 @@
+@import './styles/tokens.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root { height: 100%; }
+body { @apply bg-bg text-text font-sans antialiased; -webkit-tap-highlight-color: transparent; }
+#root { max-width: 480px; margin: 0 auto; position: relative; overflow: hidden; }
+.leaflet-container { background: rgb(var(--color-bg)); font-family: var(--font-sans); }
+.leaflet-tile-pane { opacity: .55; filter: saturate(.6); }
+.leaflet-control-attribution { background: rgb(var(--color-surface) / .8) !important; color: rgb(var(--color-text-muted)) !important; font-size: 9px; }
+.leaflet-control-attribution a { color: rgb(var(--color-text-muted)) !important; }
+.map-label { @apply whitespace-nowrap rounded-card bg-surface px-3 py-1.5 text-xs font-bold text-text shadow-float; }
+@layer components {
+  .btn { @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-card px-5 font-bold transition active:scale-[.98] disabled:opacity-50; }
+  .btn-primary { @apply btn min-h-14 bg-primary text-base text-on-primary; }
+  .btn-ghost { @apply btn min-h-14 bg-surface text-base text-text shadow-float; }
+  .btn-danger { @apply btn min-h-14 bg-danger text-on-primary; }
+  .card { @apply rounded-card bg-surface p-4; }
+  .info-box { @apply rounded-card bg-primary-soft p-4; }
+  .input { @apply min-h-12 w-full rounded-card border border-line bg-surface px-4 text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary; }
+  .chip { @apply inline-flex items-center gap-1 rounded-pill bg-surface px-3 py-1 text-[11px] font-medium text-muted shadow-float; }
+  .sheet { @apply rounded-t-sheet bg-surface shadow-sheet; }
+  .sheet-handle { @apply mx-auto h-1 w-[42px] rounded-sm bg-border; }
+  .h-title { @apply text-[19px] font-bold leading-[1.45]; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+.leaflet-tooltip.route-label { background: rgb(var(--color-surface)); border: 0; border-radius: 14px; box-shadow: 0 4px 18px rgb(38 51 72 / .12); padding: 6px 12px; font-size: 11px; font-weight: 700; }
+.leaflet-tooltip.route-label::before { display: none; }
+@keyframes scan { 0% { top: 0 } 50% { top: calc(100% - 4px) } 100% { top: 0 } }
