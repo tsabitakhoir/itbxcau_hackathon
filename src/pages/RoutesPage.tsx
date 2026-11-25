@@ -48,7 +48,7 @@ export default function RoutesPage() {
   return (
     <div className="relative flex h-full flex-col bg-surface">
       <div className="z-[600] bg-surface">
-        <TopBar title={t('c03.title')} right={<SimChip className="mr-3" />} />
+        <TopBar title={t('c03.title')} right={plan.simulated ? <SimChip className="mr-3" /> : undefined} />
         <div className="mx-6 mb-2.5 flex h-11 items-center justify-between rounded-card bg-surface px-3.5 text-xs">
           <span className="truncate font-medium">{origin.label}  →  {destination.label}</span>
           <span className="ml-2 shrink-0 text-muted">{fmtTime(departure ?? new Date(), lang)}</span>
@@ -65,17 +65,15 @@ export default function RoutesPage() {
         <h2 className="mt-4 text-[23px] font-bold leading-tight">
           {plan.same_route ? t('c03.sameRoute') : plan.extra_minutes > 0 ? t('c03.headline', { n: plan.extra_minutes }) : t('c03.headlineNoExtra')}
         </h2>
-        <div className={`mt-4 grid gap-3 ${plan.same_route ? 'grid-cols-1' : 'grid-cols-2'}`}>
-          {!plan.same_route && <Card k="fastest" r={f} />}
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          <Card k="fastest" r={f} />
           <Card k="safest" r={s} />
         </div>
-        {!plan.same_route && (
-          <div className="mt-6 space-y-4">
-            <Row a={`${litPct(f)}%`} label={t('c03.rowLit')} b={`${litPct(s)}%`} />
-            <Row a={openCount(f)} label={t('c03.rowOpen')} b={openCount(s)} />
-            <Row a={cond(f)} label={t('c03.rowNight')} b={cond(s)} />
-          </div>
-        )}
+        <div className="mt-6 space-y-4">
+          <Row a={`${litPct(f)}%`} label={t('c03.rowLit')} b={`${litPct(s)}%`} />
+          <Row a={openCount(f)} label={t('c03.rowOpen')} b={openCount(s)} />
+          <Row a={cond(f)} label={t('c03.rowNight')} b={cond(s)} />
+        </div>
         <p className="mt-5 text-center text-[10px] text-muted">{t('common.disclaimer')}</p>
         {err && <div className="mt-3"><ErrorBox message={err} /></div>}
       </div>

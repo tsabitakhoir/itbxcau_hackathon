@@ -21,15 +21,10 @@ function maybeFail() {
 const LS = 'gil-mock-v1';
 type DB = { profile: Profile; contacts: EmergencyContact[]; trips: Trip[]; locations: Record<string, { lat: number; lng: number; recorded_at: string }>; sos: Record<string, { id: string; created_at: string; lat: number | null; lng: number | null; resolved: boolean }>; reports: Report[]; ratings: Record<string, number> };
 
-const seedReports: Report[] = [
-  { id: 'r1', lat: -6.8885, lng: 107.6118, segment_id: 41, category: 'dark', note: 'No working streetlight for ~150 m', photo_url: null, created_at: new Date(Date.now() - 2 * 864e5).toISOString(), confirm_count: 4, confirmed: true, is_mine: false, confirmed_by_me: false, simulated: true },
-  { id: 'r2', lat: -6.8872, lng: 107.6142, segment_id: 42, category: 'deserted', note: 'Very quiet after 10 PM', photo_url: null, created_at: new Date(Date.now() - 5 * 864e5).toISOString(), confirm_count: CONFIRM_THRESHOLD - 1, confirmed: false, is_mine: false, confirmed_by_me: false, simulated: true },
-  { id: 'r3', lat: -6.8912, lng: 107.6155, segment_id: 30, category: 'broken_light', note: null, photo_url: null, created_at: new Date(Date.now() - 1 * 864e5).toISOString(), confirm_count: 3, confirmed: true, is_mine: false, confirmed_by_me: false, simulated: true },
-  { id: 'r4', lat: -6.8948, lng: 107.6128, segment_id: 9, category: 'harassment', note: 'Catcalling reported near the corner', photo_url: null, created_at: new Date(Date.now() - 9 * 864e5).toISOString(), confirm_count: 1, confirmed: false, is_mine: false, confirmed_by_me: false, simulated: true },
-];
+const seedReports: Report[] = [];
 
 function load(): DB {
-  try { const raw = localStorage.getItem(LS); if (raw) return JSON.parse(raw) as DB; } catch { /* ignore */ }
+  try { const raw = localStorage.getItem(LS); if (raw) { const db = JSON.parse(raw) as DB; db.reports = (db.reports ?? []).filter((r) => !r.simulated); return db; } } catch { /* ignore */ }
   return { profile: { id: 'mock-user', display_name: 'Nadia', lang: 'en', country: 'ID', id_verified_mock: false }, contacts: [{ id: 'c1', name: 'Mom', phone: '+6281234567890', channel: 'whatsapp' }], trips: [], locations: {}, sos: {}, reports: seedReports, ratings: {} };
 }
 function save(db: DB) { try { localStorage.setItem(LS, JSON.stringify(db)); } catch { /* ignore */ } }

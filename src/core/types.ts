@@ -22,7 +22,7 @@ export type RouteOption = {
   worst_segment: { id: number; name: string | null; score: number } | null; // hanya jika score < SCORE_BANDS.caution
   data_limited: boolean;
 };
-export type PlanResult = { fastest: RouteOption; safest: RouteOption; same_route: boolean; extra_minutes: number; departure_at: string; graph_version: string; simulated: true };
+export type PlanResult = { fastest: RouteOption; safest: RouteOption; same_route: boolean; extra_minutes: number; departure_at: string; graph_version: string; simulated: boolean };
 export type HeatPoint = [number, number, number]; // [lat, lng, intensitas 0..1]
 export type Profile = { id: string; display_name: string; lang: Lang; country: Country; id_verified_mock: boolean };
 export type EmergencyContact = { id: string; name: string; phone: string; channel: 'whatsapp' | 'kakao' | 'sms' };
@@ -36,5 +36,5 @@ export type ApiErrorCode = 'OUT_OF_AREA' | 'NO_ROUTE' | 'NOT_AUTHENTICATED' | 'A
 export class ApiError extends Error { code: ApiErrorCode; constructor(code: ApiErrorCode, message: string) { super(message); this.code = code; } }
 
 // Graph types (public/data/bandung-graph.json)
-export type Place = { id: number; name_id: string; name_ko: string; name_en?: string; lat: number; lng: number };
+export type Place = { id: number; name_id: string; name_ko: string; name_en?: string; display_name?: string; lat: number; lng: number };
 export type Graph = { version: string; city: string; simulated: boolean; bbox: [number, number, number, number]; nodes: { id: number; lat: number; lng: number }[]; segments: unknown[]; pois: unknown[]; places: Place[] };

@@ -1,7 +1,7 @@
 // C-02 Plan route (Figma: EN · C-02 Plan route)
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { listPlaces, planRoutes } from '../api';
+import { listPlaces, planRoutes, searchPlaces } from '../api';
 import type { Place } from '../core/types';
 import { Icon } from '../components/Icon';
 import { ErrorBox, Skeleton, TopBar, errKey } from '../components/ui';
@@ -23,6 +23,10 @@ export default function PlanPage() {
   const [from, setFrom] = useState<Pick>('me');
   const [to, setTo] = useState<Pick | null>(null);
   const [dep, setDep] = useState<string>('now');
+  const [query, setQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<Place[]>([]);
+  const [searched, setSearched] = useState(false);
+  const [searching, setSearching] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const slots = useMemo(() => nextSlots(), []);
@@ -31,13 +35,13 @@ export default function PlanPage() {
   const name = (p: Place) => (lang === 'ko' ? p.name_ko : lang === 'id' ? p.name_id : p.name_en ?? p.name_id);
   const ep = (k: Pick): Endpoint => {
     if (k === 'me') return { ...(pos ?? ITB_GATE), label: t('c02.currentLocation') };
-    const p = places!.find((x) => x.id === k)!; return { lat: p.lat, lng: p.lng, label: name(p) };
+    const p = [...(places ?? []), ...searchResults].find((x) => x.id === k)!; return { lat: p.lat, lng: p.lng, label: p.display_name ?? name(p) };
   };
-  const label = (k: Pick | null) => (k == null ? t('c02.pickDestination') : places ? ep(k).label : '…');
+  const label = (k: Pick | null) => (k == null ? t('c02.pickDestination') : k === 'me' ? ep(k).label : [...(places ?? []), ...searchResults].some((p) => p.id === k) ? ep(k).label : '…');
   const depDate = dep === 'now' ? new Date() : new Date(dep);
 
   async function compare() {
-    if (!places || to == null) return;
+    if (to == null || (!places && !searchResults.length)) return;
     setBusy(true); setErr(null);
     try {
       const origin = ep(from), destination = ep(to);
@@ -45,6 +49,13 @@ export default function PlanPage() {
       store.set({ origin, destination, departure: depDate.toISOString(), plan });
       nav('/routes');
     } catch (e) { setErr(t(errKey(e))); } finally { setBusy(false); }
+  }
+  async function findDestination(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault(); if (query.trim().length < 3) return;
+    setSearching(true); setSearched(true); setSearchResults([]); setTo(null); setErr(null);
+    try { setSearchResults(await searchPlaces(query)); }
+    catch (error) { setErr(t(errKey(error))); }
+    finally { setSearching(false); }
   }
   // Tapping a place fills the destination; tapping it again (or the selected one) clears it.
   const pick = (id: number) => setTo((cur) => (cur === id ? null : id));
@@ -68,6 +79,18 @@ export default function PlanPage() {
             className="absolute right-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center disabled:opacity-40"><Icon name="swap" /></button>
         </section>
 
+        <form onSubmit={findDestination} className="mt-5">
+          <label htmlFor="destination-search" className="mb-2 block text-sm font-bold">{t('c02.searchHeading')}</label>
+          <div className="flex gap-2">
+            <input id="destination-search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('c02.searchPlaceholder')} minLength={3} required
+              className="h-12 min-w-0 flex-1 rounded-card bg-surface-2 px-3 text-sm outline-none focus:ring-2 focus:ring-primary" />
+            <button type="submit" disabled={searching || query.trim().length < 3} className="h-12 rounded-card bg-primary px-4 text-sm font-bold text-on-primary disabled:opacity-50">
+              {searching ? t('common.loading') : t('c02.searchButton')}
+            </button>
+          </div>
+          <p className="mt-1.5 text-[10px] text-muted">{t('c02.searchAttribution')}</p>
+        </form>
+
         <div className="mt-6 flex items-baseline justify-between">
           <h3 className="text-base font-bold">{t('c02.departure')}</h3><span className="text-[11px] text-muted">{t('c02.interval')}</span>
         </div>
@@ -80,11 +103,11 @@ export default function PlanPage() {
         <p className="mt-3 text-xs text-muted">{t('c02.scoreBasis', { time: fmtTime(depDate, lang) })}</p>
 
         <div className="mt-8 flex items-baseline justify-between">
-          <h3 className="text-base font-bold">{t('c02.places')}</h3><span className="text-xs text-muted">{t('c02.placeCount', { n: places?.length ?? 0 })}</span>
+          <h3 className="text-base font-bold">{t(searched ? 'c02.searchResults' : 'c02.places')}</h3><span className="text-xs text-muted">{t('c02.placeCount', { n: searched ? searchResults.length : places?.length ?? 0 })}</span>
         </div>
-        {!places ? <div className="mt-3 grid grid-cols-2 gap-2.5">{Array.from({ length: 8 }, (_, i) => <Skeleton key={i} className="h-12" />)}</div> : (
+        {!places && !searched ? <div className="mt-3 grid grid-cols-2 gap-2.5">{Array.from({ length: 8 }, (_, i) => <Skeleton key={i} className="h-12" />)}</div> : (
           <ul className="mt-3 grid grid-cols-2 gap-x-2.5 gap-y-[9px]">
-            {places.map((p) => {
+            {(searched ? searchResults : places ?? []).map((p) => {
               const sel = to === p.id; const isFrom = from === p.id;
               return (
                 <li key={p.id}>
@@ -97,6 +120,7 @@ export default function PlanPage() {
             })}
           </ul>
         )}
+        {searched && !searching && searchResults.length === 0 && !err && <p className="mt-3 text-xs text-muted">{t('c02.noSearchResults')}</p>}
         <p className="mt-6 text-[11px] text-muted">{t('c02.demoNote')}</p>
         {err && <div className="mt-3"><ErrorBox message={err} /></div>}
       </div>

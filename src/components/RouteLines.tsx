@@ -10,7 +10,7 @@ const endIcon = L.divIcon({ className: '', iconSize: [22, 22], iconAnchor: [11, 
 /** Fastest = amber (--color-route-fast), safest = green (--color-route-safe), each with a white casing like the design. */
 export function RouteLines({ plan, selected, onSelect, labels = false }: { plan: PlanResult; selected: RouteKind; onSelect?: (k: RouteKind) => void; labels?: boolean }) {
   const { t } = useT();
-  const kinds: RouteKind[] = plan.same_route ? ['safest'] : selected === 'safest' ? ['fastest', 'safest'] : ['safest', 'fastest'];
+  const kinds: RouteKind[] = plan.same_route ? [selected] : selected === 'safest' ? ['fastest', 'safest'] : ['safest', 'fastest'];
   const g = plan.safest.geometry;
   return (
     <>

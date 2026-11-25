@@ -8,7 +8,7 @@ import type { HeatPoint, LatLng, Report } from '../core/types';
 import { Icon } from '../components/Icon';
 import { HeatLayer, MapView } from '../components/MapView';
 import { ReportMarkers, meIcon } from '../components/ReportMarkers';
-import { BottomNav, SimChip, SosButton, Toast, Toggle } from '../components/ui';
+import { BottomNav, SosButton, Toast, Toggle } from '../components/ui';
 import { fmtTime, useGeolocation } from '../components/geo';
 import { useT } from '../i18n';
 import { useStore } from '../state/store';
@@ -48,7 +48,6 @@ export default function MapPage() {
             <p className="text-[26px] font-extrabold leading-none tracking-[-0.03em] text-primary">{APP_NAME}</p>
             <p className="mt-3 text-[13px] text-muted">{t('c01.tagline')}</p>
           </div>
-          <SimChip className="mt-1" />
         </div>
         <button onClick={() => nav('/plan')} className="mt-4 flex h-[60px] w-full items-center gap-4 rounded-card bg-surface px-[18px] text-left shadow-float">
           <Icon name="search" />
