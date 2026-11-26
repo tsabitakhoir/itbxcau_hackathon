@@ -3,7 +3,7 @@
 // - Users, contacts, trips, share links, SOS, reports, ratings: Supabase when VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY are set,
 //   otherwise this browser's localStorage (src/api/mock.ts, single device only).
 import type { SegmentRating } from '../core/scoring';
-import type { HeatPoint, LatLng, PlanResult, TravelMode } from '../core/types';
+import type { DepartureMode, HeatPoint, LatLng, PlanResult, TravelMode } from '../core/types';
 import * as engine from './engine';
 import * as local from './mock';
 import * as remote from './remote';
@@ -45,7 +45,7 @@ async function localRatings(): Promise<SegmentRating[]> {
 }
 const community: engine.Community = { reports: () => listReports(), ratings: R ? remote.segmentRatings : localRatings };
 
-export function planRoutes(i: { origin: LatLng; destination: LatLng; departure_at: Date; mode?: TravelMode }): Promise<PlanResult> {
+export function planRoutes(i: { origin: LatLng; destination: LatLng; departure_at: Date; departure_mode?: DepartureMode; mode?: TravelMode }): Promise<PlanResult> {
   return engine.planRoutes(i, community);
 }
 export function getActivityHeatmap(departure_at: Date): Promise<HeatPoint[]> {

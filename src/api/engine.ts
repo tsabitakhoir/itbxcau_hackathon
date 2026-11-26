@@ -3,12 +3,13 @@
 // 2. Outside that area: the graph is built live from Overpass (OpenStreetMap) for a box around origin + destination.
 // The graph path uses our safety score. Valhalla is a last-resort route fallback when no graph is available.
 import { activityHeatmap } from '../core/heatmap';
+import { SCORE_WEIGHTS } from '../core/config';
 import { bboxOf, dist, inBbox, type Pt } from '../core/geo';
 import { buildGraph, ITB_PLACES, overpassQuery, type OsmElement } from '../core/osm';
 import { planOnGraph } from '../core/planner';
 import { snap } from '../core/routing';
-import { applyCommunity, prepareGraph, type Prepared, type SegmentRating } from '../core/scoring';
-import { ApiError, type Graph, type HeatPoint, type LatLng, type PlanResult, type Report, type TravelMode } from '../core/types';
+import { applyCommunity, cityClock, hourFactor, prepareGraph, type Prepared, type SegmentRating } from '../core/scoring';
+import { ApiError, type CalculationBasis, type DepartureMode, type Graph, type HeatPoint, type LatLng, type PlanResult, type Report, type TravelMode } from '../core/types';
 
 const STATIC_URL = `${import.meta.env.BASE_URL ?? '/'}data/bandung-graph.json`;
 const OVERPASS = [import.meta.env.VITE_OVERPASS_URL, 'https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'].filter(Boolean) as string[];
@@ -84,8 +85,9 @@ function fallbackManeuver(type = 8): NonNullable<PlanResult['fastest']['steps']>
  * OSM-based route, but has no per-segment safety/community data; both choices
  * therefore share one route and are explicitly marked data-limited.
  */
-async function fallbackRoutes(i: { origin: LatLng; destination: LatLng; departure_at: Date; mode?: TravelMode }): Promise<PlanResult> {
+async function fallbackRoutes(i: { origin: LatLng; destination: LatLng; departure_at: Date; departure_mode?: DepartureMode; mode?: TravelMode }): Promise<PlanResult> {
   const mode = i.mode ?? 'walk';
+  const basis: CalculationBasis = i.departure_mode === 'now' ? 'current' : i.departure_mode === 'scheduled' ? 'forecast' : i.departure_at.getTime() > Date.now() + 60_000 ? 'forecast' : 'current';
   const payload = {
     locations: [
       { lat: i.origin.lat, lon: i.origin.lng, type: 'break' },
@@ -110,11 +112,16 @@ async function fallbackRoutes(i: { origin: LatLng; destination: LatLng; departur
       distance_m: Math.round((m.length ?? 0) * 1000),
       at: geometry[Math.min(m.begin_shape_index ?? 0, geometry.length - 1)],
     }));
+    const activity = hourFactor(cityClock(i.departure_at, 420)); // historical Bandung activity profile, used when route edge data is unavailable
+    const factors = { lighting: 0.5, facilities: 0.5, crowd: activity, reports: 0.5, community_penalty: 0 };
+    const score = Math.round((1 + 4 * (
+      SCORE_WEIGHTS.lighting * factors.lighting + SCORE_WEIGHTS.facilities * factors.facilities +
+      SCORE_WEIGHTS.crowd * factors.crowd + SCORE_WEIGHTS.reports * factors.reports
+    )) * 10) / 10;
     const reasons = [{ code: 'DATA_LIMITED' as const, tone: 'info' as const }];
     const common = {
       segment_ids: [], geometry, length_m: Math.round(leg.summary.length! * 1000),
-      duration_s: Math.round(leg.summary.time!), score: 3,
-      factors: { lighting: 0.5, facilities: 0.5, crowd: 0.5, reports: 0.5, community_penalty: 0 },
+      duration_s: Math.round(leg.summary.time!), score, factors,
       reasons, worst_segment: null, data_limited: true,
       access: mode === 'wheelchair' ? { steps: 0, steep_m: 0, narrow_m: 0, lowered_kerbs: 0, accessible_toilets: 0, wheelchair_ok: false, accessibility_verified: false } : undefined,
       steps,
@@ -123,7 +130,7 @@ async function fallbackRoutes(i: { origin: LatLng; destination: LatLng; departur
     const safest = { ...common, kind: 'safest' as const, mode };
     return {
       fastest, safest, same_route: true, extra_minutes: 0,
-      departure_at: i.departure_at.toISOString(), graph_version: 'valhalla-fallback', simulated: false, mode,
+      departure_at: i.departure_at.toISOString(), calculation_basis: basis, graph_version: 'valhalla-fallback', simulated: false, mode,
     };
   } catch (e) {
     throw new ApiError('NETWORK', `Map routing is temporarily unavailable: ${String(e)}`);
@@ -164,7 +171,7 @@ export async function loadGraph(): Promise<Graph> {
   return (await liveGraph(ITB_BOX)).graph;
 }
 
-export async function planRoutes(i: { origin: LatLng; destination: LatLng; departure_at: Date; mode?: TravelMode }, community: Community): Promise<PlanResult> {
+export async function planRoutes(i: { origin: LatLng; destination: LatLng; departure_at: Date; departure_mode?: DepartureMode; mode?: TravelMode }, community: Community): Promise<PlanResult> {
   if (dist([i.origin.lat, i.origin.lng], [i.destination.lat, i.destination.lng]) < 15) throw new ApiError('NO_ROUTE', 'Origin and destination are the same place');
   try {
     const pg = await graphFor([[i.origin.lat, i.origin.lng], [i.destination.lat, i.destination.lng]]);
