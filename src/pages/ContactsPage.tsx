@@ -20,15 +20,15 @@ export default function ContactsPage() {
       <div className="flex-1 overflow-y-auto px-6 pb-8">
         <p className="text-sm text-muted">{t('s04.body')}</p>
         <ul className="mt-5 space-y-2">
-          {!list ? <Skeleton className="h-16" /> : list.length === 0 ? <li className="rounded-card bg-surface p-4 text-sm text-muted">{t('s04.empty')}</li> : list.map((c) => (
-            <li key={c.id} className="flex items-center gap-3 rounded-card bg-surface p-4">
+          {!list ? <Skeleton className="h-16" /> : list.length === 0 ? <li className="rounded-card bg-surface-2 p-4 text-sm text-muted">{t('s04.empty')}</li> : list.map((c) => (
+            <li key={c.id} className="flex items-center gap-3 rounded-card bg-surface-2 p-4">
               <span className="grid h-10 w-10 place-items-center rounded-full bg-primary-soft text-primary"><Icon name="user" size={20} /></span>
               <span className="flex-1"><span className="block font-bold">{c.name}</span><span className="text-xs text-muted">{c.phone} · {c.channel}</span></span>
               <button aria-label={t('s04.delete', { name: c.name })} onClick={async () => { await deleteContact(c.id); setList((l) => l?.filter((x) => x.id !== c.id) ?? null); }} className="grid h-11 w-11 place-items-center text-muted"><Icon name="trash" size={20} /></button>
             </li>
           ))}
         </ul>
-        <div className="mt-6 space-y-3 rounded-card bg-surface p-4">
+        <div className="mt-6 space-y-3 rounded-card border border-line bg-surface p-4">
           <input className="input" placeholder={t('s04.name')} value={name} onChange={(e) => setName(e.target.value)} />
           <input className="input" inputMode="tel" placeholder={t('s04.phone')} value={phone} onChange={(e) => setPhone(e.target.value)} />
           <div className="grid grid-cols-3 gap-2">
