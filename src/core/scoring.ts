@@ -12,7 +12,7 @@ import { GridIndex, pointToPolyline, type Pt } from './geo';
 import { isOpenAt } from './hours';
 import type { Factors, Graph, GraphPoi, GraphSegment, Report } from './types';
 
-export type SegmentRating = { segment_id: number; avg_rating: number; n: number };
+export type SegmentRating = { segment_id: number; avg_rating: number; n: number; graph_version?: string };
 
 export type Prepared = {
   graph: Graph;
@@ -69,7 +69,7 @@ export function applyCommunity(pg: Prepared, reports: Report[], ratings: Segment
     if (!pg.reports.has(seg.id)) pg.reports.set(seg.id, []);
     pg.reports.get(seg.id)!.push(r);
   }
-  pg.ratings = new Map(ratings.filter((x) => x.n >= 2).map((x) => [x.segment_id, x]));
+  pg.ratings = new Map(ratings.filter((x) => x.n >= 2 && (!x.graph_version || x.graph_version === pg.graph.version)).map((x) => [x.segment_id, x]));
 }
 
 export function hourFactor(t: Date): number {

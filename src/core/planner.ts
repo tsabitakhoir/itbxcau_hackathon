@@ -90,7 +90,7 @@ function buildOption(kind: RouteKind, mode: TravelMode, legs: Leg[], pg: Prepare
   let total = 0, litGood = 0, busy = 0, unknownLit = 0;
   const open = new Set<number>(), police = new Set<number>(), toilets = new Set<number>(), kerbs = new Set<number>();
   const reportIds = new Set<string>();
-  const access = { steps: 0, steep_m: 0, narrow_m: 0, rough_m: 0, lowered_kerbs: 0, accessible_toilets: 0, wheelchair_ok: true } satisfies AccessInfo;
+  const access: AccessInfo & { rough_m: number } = { steps: 0, steep_m: 0, narrow_m: 0, rough_m: 0, lowered_kerbs: 0, accessible_toilets: 0, wheelchair_ok: true };
   type Run = { kind: WatchArea['kind']; legs: Leg[]; m: number };
   const watch: Run[] = [];
   let darkRun: Run | null = null, quietRun: Run | null = null;
