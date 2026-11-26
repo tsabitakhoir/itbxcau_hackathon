@@ -36,6 +36,7 @@ export default function WalkPage() {
   const [now, setNow] = useState(() => Date.now());
   const [follow, setFollow] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [card, setCard] = useState(0); const strip = useRef<HTMLDivElement>(null);
   const [contacts, setContacts] = useState<EmergencyContact[]>([]);
   useEffect(() => { listContacts().then(setContacts).catch(() => undefined); }, []);
 
@@ -80,17 +81,23 @@ export default function WalkPage() {
     nav(status === 'arrived' ? `/arrived/${trip.id}` : '/map', { replace: true });
   }
 
-  // Next instruction: contract steps if present, else a generic "head to destination".
+  // Instruction cards: the next turn first, then the turns after it (swipe sideways to preview).
   const g0 = trip?.route.geometry ?? [];
   const stepsIdx = (trip?.route.steps ?? []).map((st) => ({ st, i: nearestIdx(g0, st.at) }));
   const doneIdx = trip && simulate ? Math.min(0.999, simF) * (g0.length - 1) : pos && g0.length ? nearestIdx(g0, [pos.lat, pos.lng]) : 0;
-  const next: NavStep | undefined = stepsIdx.find((x) => x.st.maneuver !== 'depart' && x.i > doneIdx)?.st;
-  const nextDist = next && pos ? Math.round(distM([pos.lat, pos.lng], next.at) / 10) * 10 : null;
-  const nextTitle = !trip ? '' : next && nextDist != null ? (next.maneuver === 'arrive' ? t('c05.arriveIn', { m: nextDist }) : t(`turn.${next.maneuver}`, { m: nextDist })) : t('c05.nextTitle', { place: trip.destination.label });
-  const nextSub = !trip ? '' : `${next?.name ? `${next.name} · ` : ''}${t(trip.chosen === 'safest' ? (trip.route.mode === 'wheelchair' ? 'c05.nextWheelchair' : 'c05.nextSafe') : 'c05.nextFast')}`;
+  const upcoming: NavStep[] = stepsIdx.filter((x) => x.st.maneuver !== 'depart' && x.i > doneIdx).map((x) => x.st);
+  const subFor = (st?: NavStep) => `${st?.name ? `${st.name} · ` : ''}${t(trip?.chosen === 'safest' ? (trip.route.mode === 'wheelchair' ? 'c05.nextWheelchair' : 'c05.nextSafe') : 'c05.nextFast')}`;
+  const cards = !trip ? [] : upcoming.length
+    ? upcoming.map((st) => { const d = pos ? Math.round(distM([pos.lat, pos.lng], st.at) / 10) * 10 : null; return { key: `${st.maneuver}@${st.at.join(',')}`, step: st, title: d == null ? t(`turn.${st.maneuver}`, { m: '' }) : st.maneuver === 'arrive' ? t('c05.arriveIn', { m: d }) : t(`turn.${st.maneuver}`, { m: d }), sub: subFor(st) }; })
+    : [{ key: 'dest', step: undefined as NavStep | undefined, title: t('c05.nextTitle', { place: trip.destination.label }), sub: subFor(undefined) }];
+  const nextTitle = cards[0]?.title ?? ''; const nextSub = cards[0]?.sub ?? '';
+  const stepKey = cards[0]?.key ?? 'dest';
+  // When the route moves on to the next turn, bring the strip back to the first card.
+  useEffect(() => { setCard(0); strip.current?.scrollTo({ left: 0 }); }, [stepKey]);
+  const onStrip = () => { const el = strip.current; if (el && el.clientWidth) setCard(Math.round(el.scrollLeft / el.clientWidth)); };
+  const dots = cards.slice(0, 6);
 
   // Voice guidance: speak when the instruction changes (not every distance tick).
-  const stepKey = next ? `${next.maneuver}@${next.at.join(',')}` : 'dest';
   useEffect(() => {
     if (!prefs.voice || !trip || spoken.current === stepKey) return;
     spoken.current = stepKey; speak(`${nextTitle}. ${nextSub}`, lang);
@@ -121,13 +128,25 @@ export default function WalkPage() {
           </MapView>
         </div>
         <div className="absolute inset-x-6 top-2 z-[500] space-y-3">
-          <div className="flex min-h-[90px] items-center gap-5 rounded-[18px] bg-surface px-5 py-3 shadow-float" aria-live="polite">
-            <Icon name={next ? turnIcon(next.maneuver) : 'right'} size={32} className="shrink-0 text-primary" />
-            <div className="min-w-0">
-              <p className="truncate text-xl font-bold text-text">{nextTitle}</p>
-              <p className="mt-1 truncate text-[11px] text-text-2">{nextSub}</p>
+          <div>
+            <div ref={strip} onScroll={onStrip} aria-live="polite" role="group" aria-roledescription="carousel" aria-label={t('c05.title')}
+              className="flex snap-x snap-mandatory overflow-x-auto rounded-[18px] shadow-float [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {cards.map((c, i) => (
+                <div key={c.key} role="group" aria-label={`${i + 1} / ${cards.length}`} className="flex min-h-[90px] w-full shrink-0 snap-center items-center gap-5 bg-surface px-5 py-3">
+                  <Icon name={c.step ? turnIcon(c.step.maneuver) : 'right'} size={32} className="shrink-0 text-primary" />
+                  <div className="min-w-0">
+                    <p className="line-clamp-2 text-lg font-bold leading-6 text-text">{c.title}</p>
+                    <p className="mt-1 truncate text-[11px] text-text-2">{c.sub}</p>
+                  </div>
+                  {prefs.voice && i === card && <button aria-label={t('c01.voice')} onClick={() => speak(`${c.title}. ${c.sub}`, lang)} className="ml-auto grid h-11 w-11 shrink-0 place-items-center rounded-full bg-primary-soft text-primary"><Icon name="volume" size={20} /></button>}
+                </div>
+              ))}
             </div>
-            {prefs.voice && <button aria-label={t('c01.voice')} onClick={() => speak(`${nextTitle}. ${nextSub}`, lang)} className="ml-auto grid h-11 w-11 shrink-0 place-items-center rounded-full bg-primary-soft text-primary"><Icon name="volume" size={20} /></button>}
+            {dots.length > 1 && (
+              <div className="mt-2 flex justify-center gap-1.5" aria-hidden="true">
+                {dots.map((c, i) => <span key={c.key} className={`h-1.5 rounded-full transition-all ${i === card ? 'w-4 bg-primary' : 'w-1.5 bg-white/80 shadow'}`} />)}
+              </div>
+            )}
           </div>
           <button onClick={share} className="flex h-[42px] w-full items-center justify-between rounded-[14px] bg-surface-2/95 px-3.5 text-xs font-medium text-text-2">
             <span className="flex items-center gap-3"><span className="h-2 w-2 rounded-full bg-safe-line" />{contact ? t('c05.sharingWith', { name: contact }) : t('c05.sharing')}</span>

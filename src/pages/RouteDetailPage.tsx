@@ -6,8 +6,9 @@ import { Navigate, useParams } from 'react-router-dom';
 import { planRoutes } from '../api';
 import { SCORE_BANDS, SCORE_WEIGHTS } from '../core/config';
 import type { Factors, RouteKind, RouteOption, WatchArea } from '../core/types';
+import { Icon } from '../components/Icon';
 import { FitBounds, MapView, token } from '../components/MapView';
-import { pts, TopBar, scoreTone, ReasonList } from '../components/ui';
+import { pts, TopBar, scoreTone, ReasonList, reasonText, sortReasons } from '../components/ui';
 import { fmtTime } from '../components/geo';
 import { useT } from '../i18n';
 import { useStore } from '../state/store';
@@ -28,6 +29,7 @@ function headlineKey(r: RouteOption) {
 export default function RouteDetailPage() {
   const { kind } = useParams<{ kind: RouteKind }>(); const { t, lang } = useT(); const { plan, origin, destination, departure, prefs } = useStore();
   const dep = departure ? new Date(departure) : new Date();
+  const [showHow, setShowHow] = useState(false);
   const [later, setLater] = useState<{ at: Date; score: number } | null>(null);
   const r0 = plan && (kind === 'fastest' || kind === 'safest') ? plan[kind] : null;
   useEffect(() => {
@@ -42,6 +44,8 @@ export default function RouteDetailPage() {
   const fast = plan.fastest, safe = plan.safest;
   const f: Factors = r.factors;
   const reports = r.reasons.find((x) => x.code === 'CONFIRMED_REPORTS')?.count ?? 0;
+  // One readable paragraph out of the strongest reasons (good ones first), instead of a bare list.
+  const summary = sortReasons(r.reasons).filter((x) => x.count !== 0).slice(0, 4).map((x) => reasonText(t, x).replace(/\s*·\s*—/g, '').replace(/[.。]+$/, '')).join('. ') + '.';
   const wheelchair = (plan.mode ?? prefs.mode) === 'wheelchair';
   const cond = (x: RouteOption) => { const tone = scoreTone(x.score); return <span className={tone === 'safe' ? '' : tone === 'caution' ? 'text-caution' : 'text-danger-text'}>{t(`band.${tone}`)}</span>; };
 
@@ -62,17 +66,25 @@ export default function RouteDetailPage() {
       <TopBar title={t('c04.title')} />
       <div className="flex-1 overflow-y-auto px-6 pb-10">
         <h2 className="page-heading mt-4 text-text">{t(headlineKey(r) as 'c04.hl.care')}</h2>
-        <section className="mt-5 flex items-center gap-6 rounded-[24px] bg-primary-soft px-5 py-4">
-          <div className="shrink-0">
-            <p className="text-[13px] text-text-2">{t('c04.safetyScore')}</p>
-            <p className="flex items-baseline gap-3"><span className="display-number text-primary">{pts(r.score)}</span><span className="text-xs text-muted">/ 100</span></p>
+        <section className="mt-5 rounded-[24px] bg-primary-soft px-5 py-4">
+          <div className="flex items-center gap-6">
+            <div className="shrink-0">
+              <p className="text-[13px] text-text-2">{t('c04.safetyScore')}</p>
+              <p className="flex items-baseline gap-3"><span className="display-number text-primary">{pts(r.score)}</span><span className="text-xs text-muted">/ 100</span></p>
+            </div>
+            <div className="min-w-0">
+              <p className="text-base font-bold text-text">{t(`kind.${kind}`)}</p>
+              <p className="mt-1.5 text-xs text-muted">{t('c04.forDeparture', { time: fmtTime(dep, lang) })}</p>
+            </div>
           </div>
-          <div className="min-w-0">
-            <p className="text-base font-bold text-text">{t(`kind.${kind}`)}</p>
-            <p className="mt-1.5 text-xs text-muted">{t('c04.forDeparture', { time: fmtTime(dep, lang) })}</p>
-          </div>
+          <p className="mt-3.5 text-sm leading-6 text-text-2">{summary}</p>
         </section>
+        <button type="button" aria-expanded={showHow} onClick={() => setShowHow((v) => !v)}
+          className="mt-3 flex h-11 w-full items-center justify-center gap-1.5 rounded-[14px] bg-surface-2 text-sm font-bold text-primary">
+          {t(showHow ? 'c04.hideDetails' : 'c04.viewDetails')}<Icon name="chev" size={16} className={showHow ? '-rotate-90' : 'rotate-90'} />
+        </button>
 
+        {showHow && <div>
         <h3 className="mt-7 text-lg font-bold text-text">{t('c04.how')}</h3>
         <div className="mt-4 space-y-4">
           {FACTORS.map((k) => (
@@ -87,6 +99,7 @@ export default function RouteDetailPage() {
           <span className="font-medium text-text-2">{f100(f.reports)} {t('common.pts')}</span>
         </div>
         <p className="mt-3 text-xs text-muted">{t('c04.formula', { s: pts(r.score) })}</p>
+        </div>}
 
         <h3 className="mt-7 text-lg font-bold text-text">{t('c04.compare')}</h3>
         <div className="mt-2 grid grid-cols-[80px_1fr_80px] text-center text-[11px] text-text-2"><span>{t('c04.fast')}</span><span>{t('c04.criteria')}</span><span>{t('c04.safe')}</span></div>

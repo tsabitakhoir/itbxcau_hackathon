@@ -12,7 +12,7 @@ export default function OnboardingPage() {
   const { t, lang, setLang } = useT(); const nav = useNavigate(); const { profile, setProfile } = useStore();
   const country = profile?.country ?? 'ID';
   const setCountry = async (c: Country) => setProfile(await updateProfile({ country: c }));
-  async function go() { setProfile(await updateProfile({ lang })); try { localStorage.setItem('onboarded', '1'); } catch { /* ignore */ } nav('/verify'); }
+  async function go() { setProfile(await updateProfile({ lang })); try { localStorage.setItem('onboarded', '1'); } catch { /* ignore */ } nav('/contacts?next=/mode'); }
   const Opt = ({ on, children, onClick }: { on: boolean; children: ReactNode; onClick: () => void }) => (
     <button onClick={onClick} aria-pressed={on} className={`flex h-12 items-center gap-2 rounded-card px-4 text-sm ${on ? 'bg-primary-soft-2 font-bold text-primary-strong' : 'bg-surface-2 font-medium text-muted'}`}>{on && <Icon name="check" size={18} className="text-safe-line" />}{children}</button>
   );
