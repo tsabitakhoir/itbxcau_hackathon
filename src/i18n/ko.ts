@@ -99,7 +99,7 @@ const ko: Dict = {
   "c03.headline": "{n}분 더, 더 안심되는 길.",
   "c03.headlineNoExtra": "같은 시간, 더 안전하게.",
   "c03.sameRoute": "가장 빠른 길이 가장 안전한 길이에요.",
-  "c03.dataLimited": "일부 구간은 데이터가 부족해 점수가 대략적이에요(~).",
+  "c03.dataLimited": "추정치: 일부 구간은 가로등 데이터가 없어요.",
   "c03.earliest": "가장 빨리 도착",
   "c03.safeDelta": "+{n}분 · 안전 +{d}",
   "c03.rowLit": "밝은 길",

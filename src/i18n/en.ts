@@ -98,7 +98,7 @@ const en = {
   "c03.headline": "{n} min more. Feel safer.",
   "c03.headlineNoExtra": "Same time, a safer walk.",
   "c03.sameRoute": "The fastest route is also the safest.",
-  "c03.dataLimited": "Some streets have limited map data, so the score is approximate (~).",
+  "c03.dataLimited": "Estimate: lighting data is missing for some streets.",
   "c03.earliest": "Earliest arrival",
   "c03.safeDelta": "+{n} min · Safety +{d}",
   "c03.rowLit": "Well-lit streets",

@@ -35,7 +35,7 @@ export default function RoutesPage() {
         <p className={`text-[13px] font-medium ${safe ? 'text-primary' : 'text-muted'}`}>{t(`kind.${k}`)}</p>
         <p className="mt-1.5 text-[28px] font-bold leading-[42px] text-text">{t('common.min', { n: minutes(r) })}</p>
         <p className="mt-1 text-sm text-muted">{km(r.length_m)}</p>
-        <p className={`mt-1.5 text-[13px] font-medium ${safe ? 'text-primary' : 'text-text-2'}`}>{t('c03.score', { n: `${r.data_limited ? '~' : ''}${pts(r.score)}` })}</p>
+        <p className={`mt-1.5 text-[13px] font-medium ${safe ? 'text-primary' : 'text-text-2'}`}>{t('c03.score', { n: `${pts(r.score)}` })}</p>
         {wheelchair && <p className="mt-1 text-[11px] font-medium">{accessLine(r)}</p>}
       </button>
     );

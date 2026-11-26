@@ -99,7 +99,7 @@ const id: Dict = {
   "c03.headline": "{n} menit lebih lama. Lebih aman.",
   "c03.headlineNoExtra": "Waktu sama, jalan lebih aman.",
   "c03.sameRoute": "Rute tercepat juga yang teraman.",
-  "c03.dataLimited": "Sebagian jalan datanya terbatas, jadi skornya perkiraan (~).",
+  "c03.dataLimited": "Perkiraan: data lampu jalan belum lengkap di sebagian ruas.",
   "c03.earliest": "Paling cepat sampai",
   "c03.safeDelta": "+{n} mnt · Keamanan +{d}",
   "c03.rowLit": "Jalan terang",

@@ -65,7 +65,7 @@ export default function RouteDetailPage() {
         <section className="mt-5 flex items-center gap-6 rounded-[24px] bg-primary-soft px-5 py-4">
           <div className="shrink-0">
             <p className="text-[13px] text-text-2">{t('c04.safetyScore')}</p>
-            <p className="flex items-baseline gap-3"><span className="text-[48px] font-bold leading-[1.3] text-primary">{r.data_limited ? '~' : ''}{pts(r.score)}</span><span className="text-xs text-muted">/ 100</span></p>
+            <p className="flex items-baseline gap-3"><span className="text-[48px] font-bold leading-[1.3] text-primary">{pts(r.score)}</span><span className="text-xs text-muted">/ 100</span></p>
           </div>
           <div className="min-w-0">
             <p className="text-base font-bold text-text">{t(`kind.${kind}`)}</p>
