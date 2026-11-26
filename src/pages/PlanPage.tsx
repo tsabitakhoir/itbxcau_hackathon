@@ -104,8 +104,10 @@ export default function PlanPage() {
     <div className="flex h-full flex-col">
       <TopBar title={t('c02.title')} />
       <div className="flex-1 overflow-y-auto px-6 pb-36">
-        <h2 className="page-heading mt-4 text-text">{t('c02.heading')}</h2>
-        <p className="mt-1.5 flex items-center gap-1.5 text-sm text-muted"><Icon name={store.prefs.mode === 'walk' ? 'walk' : 'wheelchair'} size={15} />{t(store.prefs.mode === 'walk' ? 'c02.subWalk' : 'c02.subWheelchair')}</p>
+        <div className="mt-3 flex items-center justify-between gap-3">
+          <h2 className="page-heading text-text">{t('c02.heading')}</h2>
+          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-surface-2 px-3 py-2 text-xs font-medium text-text-2"><Icon name={store.prefs.mode === 'walk' ? 'walk' : 'wheelchair'} size={14} />{t(`mode.${store.prefs.mode}`)}</span>
+        </div>
 
         <section className="relative mt-6 rounded-[22px] bg-surface-2 py-4 pl-[18px] pr-14">
           {row('from', t('c02.from'), false)}
@@ -135,8 +137,8 @@ export default function PlanPage() {
           </ul>
         )}
 
-        <div className="mt-6 flex items-baseline justify-between">
-          <h3 className="text-lg font-bold text-text-3">{t('c02.departure')}</h3><span className="text-xs text-muted">{t('c02.interval')}</span>
+        <div className="mt-5 flex items-baseline justify-between">
+          <h3 className="text-base font-bold text-text-3">{t('c02.departure')}</h3><span className="text-xs text-muted">{t('c02.interval')}</span>
         </div>
         <div className="mt-3 grid grid-cols-2 gap-2.5">
           <button type="button" onClick={() => { setDep('now'); setCustom(null); }} aria-pressed={dep === 'now'}
@@ -149,8 +151,8 @@ export default function PlanPage() {
         {custom && <div className="mt-3"><TimeWheel hour={custom.h} minute={custom.m} onHour={(h) => setCustom((c) => ({ m: 0, ...c, h }))} onMinute={(m) => setCustom((c) => ({ h: 0, ...c, m }))} labels={{ hour: t('c02.hour'), minute: t('c02.minute') }} /></div>}
         <p className="mt-3.5 text-xs leading-5 text-muted">{t(dep === 'now' ? 'c02.currentBasis' : 'c02.forecastBasis', { time: fmtTime(depDate, lang) })}{departureIsTomorrow && <span className="ml-1 font-medium">{t('c02.nextDay')}</span>}</p>
 
-        <div className="mt-7 flex items-baseline justify-between">
-          <h3 className="text-lg font-bold text-text-3">{t('c02.places')}</h3><span className="text-xs text-muted">{t('c02.placeCount', { n: places?.length ?? 0 })}</span>
+        <div className="mt-5 flex items-baseline justify-between">
+          <h3 className="text-base font-bold text-text-3">{t('c02.places')}</h3><span className="text-xs text-muted">{t('c02.placeCount', { n: places?.length ?? 0 })}</span>
         </div>
         {!places ? <div className="mt-3 grid grid-cols-2 gap-2.5">{Array.from({ length: 8 }, (_, i) => <Skeleton key={i} className="h-10" />)}</div> : (
           <ul className="mt-3 grid grid-cols-2 gap-x-2.5 gap-y-2">
@@ -167,7 +169,7 @@ export default function PlanPage() {
             })}
           </ul>
         )}
-        <p className="mt-6 text-[11px] text-muted">{t('c02.demoNote')}</p>
+        <p className="mt-4 text-[11px] leading-4 text-muted">{t('c02.demoNote')}</p>
         {err && <div className="mt-3"><ErrorBox message={err} /></div>}
       </div>
       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-bg via-bg to-transparent px-6 pb-[max(2.25rem,env(safe-area-inset-bottom))] pt-6">

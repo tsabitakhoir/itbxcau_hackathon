@@ -25,8 +25,9 @@ export default function SharedTripPage() {
   }, [tk, t]);
 
   const header = (
-    <header className="flex min-h-[72px] items-center gap-2 bg-surface px-6 pt-[max(1.75rem,env(safe-area-inset-top))]">
-      <h1 className="h-title flex-1 truncate">{APP_NAME} · {t('c07.title')}</h1>
+    <header className="flex min-h-[72px] items-center gap-3 bg-surface px-6 pt-[max(1.75rem,env(safe-area-inset-top))]">
+      <img src="/gilon.jpeg" alt={APP_NAME} className="h-9 w-9 shrink-0 object-contain" />
+      <h1 className="h-title flex-1 truncate">{t('c07.title')}</h1>
       <span className="flex items-center gap-1.5 rounded-[14px] bg-primary-soft px-2.5 py-1.5 text-[10px] text-safe"><Icon name="lock" size={15} />{t('c07.noSignIn')}</span>
     </header>
   );

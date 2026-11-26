@@ -28,6 +28,7 @@ const P: Record<string, string> = {
   turn: 'M6 20v-8a4 4 0 014-4h9M15 4l4 4-4 4',
   lock: 'M6 11h12v10H6zM8 11V7a4 4 0 018 0v4',
   chev: 'M9 6l6 6-6 6',
+  chevDown: 'M6 9l6 6 6-6',
   trash: 'M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14',
   walk: 'M13 4a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM9 22l2.5-7M14 22l-1-5-2.5-3 1-5M7 12l3-4 3.5 1 2.5 4',
   wheelchair: 'M11 4a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM11 6v7h6l2 6M11 9h5M8 10.5a6 6 0 108.5 7.5',

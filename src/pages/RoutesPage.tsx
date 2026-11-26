@@ -50,7 +50,7 @@ export default function RoutesPage() {
       <div className="z-[600] bg-surface">
         <TopBar title={t('c03.title')} right={plan.simulated ? <SimChip className="mr-3" /> : undefined} />
         <div className="mx-6 mb-2.5 flex h-11 items-center justify-between rounded-[14px] bg-surface px-3.5 text-xs">
-          <span className="truncate font-medium text-text">{origin.label}  →  {destination.label}</span>
+          <span className="flex min-w-0 items-center gap-1.5 font-medium text-text"><span className="truncate">{origin.label}</span><Icon name="arrow" size={14} className="shrink-0" /><span className="truncate">{destination.label}</span></span>
           <span className="ml-2 shrink-0 text-muted">{fmtTime(departure ?? new Date(), lang)}</span>
         </div>
       </div>
@@ -72,7 +72,7 @@ export default function RoutesPage() {
             </div>
             <button onClick={() => nav(`/routes/${sel}`)} className="mt-[22px] flex h-[60px] w-full items-center justify-between rounded-[18px] bg-surface-2 px-4 text-left">
               <span className="text-[15px] font-medium text-text-3">{t('c03.why')}</span>
-              <span className="text-xs font-medium text-primary">{t('c03.details')}  ›</span>
+              <span className="inline-flex items-center gap-1 text-xs font-medium text-primary">{t('c03.details')}<Icon name="arrow" size={15} /></span>
             </button>
             {(f.data_limited || s.data_limited) && <p className="mt-3 text-[11px] text-muted">{t('c03.dataLimited')}</p>}
             <p className="mt-4 text-center text-[10px] text-muted">{t('common.disclaimer')}</p>

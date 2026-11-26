@@ -55,7 +55,7 @@ export default function RouteDetailPage() {
     : r.worst_segment ? [{ segment_id: r.worst_segment.id, name: r.worst_segment.name, kind: 'dark', meters: r.reasons.find((x) => x.code === 'DARK_STRETCH')?.meters ?? 0, score: r.worst_segment.score, at: g[Math.floor(g.length / 2)] }] : [];
   const near = (a: WatchArea) => { let k = 0, d = Infinity; g.forEach((p, i) => { const dd = (p[0] - a.at[0]) ** 2 + (p[1] - a.at[1]) ** 2; if (dd < d) { d = dd; k = i; } }); return g.slice(Math.max(0, k - 1), Math.min(g.length, k + 2)); };
   const areaText = (a: WatchArea) => `${t(`watch.${a.kind}`)}${a.meters ? ` · ${a.meters} m` : ''}${a.name ? ` · ${a.name}` : ''}`;
-  const areaIcon = (a: WatchArea) => L.divIcon({ className: '', iconAnchor: [-8, 23], html: `<span class="map-label" style="display:inline-flex;gap:8px;align-items:center;font-size:11px;font-weight:500"><span style="color:rgb(var(--color-caution-line))">⚠</span>${areaText(a)}</span>` });
+  const areaIcon = (a: WatchArea) => L.divIcon({ className: '', iconAnchor: [-8, 23], html: `<span class="map-label" style="display:inline-flex;gap:8px;align-items:center;font-size:11px;font-weight:500"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgb(var(--color-caution-line))" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0zM12 9v4M12 17h.01"/></svg>${areaText(a)}</span>` });
 
   const Row = ({ a, label, b }: { a: ReactNode; label: string; b: ReactNode }) => (
     <div className="grid grid-cols-[80px_1fr_80px] items-center text-center"><span className="text-[13px] font-bold text-text-2">{a}</span><span className="text-xs text-muted">{label}</span><span className="text-[13px] font-bold text-primary">{b}</span></div>
@@ -126,14 +126,14 @@ export default function RouteDetailPage() {
               <FitBounds points={near(areas[0]).length > 1 ? near(areas[0]) : g} />
             </MapView>
           </div>
-          {areas.length > 1 && <ul className="mt-2 space-y-1 text-xs text-text-2">{areas.slice(1).map((a, i) => <li key={i}>⚠ {areaText(a)}</li>)}</ul>}
+          {areas.length > 1 && <ul className="mt-2 space-y-1 text-xs text-text-2">{areas.slice(1).map((a, i) => <li key={i} className="flex items-start gap-1.5"><Icon name="alert" size={14} className="mt-0.5 shrink-0 text-caution" />{areaText(a)}</li>)}</ul>}
         </>}
 
         <section className="mt-6 rounded-[22px] bg-surface-2 px-[18px] py-4">
           <p className="text-base font-bold text-text">{t('c04.nightTitle')}</p>
           <p className="mt-1.5 text-[13px] text-text-2">{t('c04.nightBody')}</p>
-          <p className="mt-2.5 whitespace-pre text-sm font-medium text-primary">
-            {fmtTime(dep, lang)}  {pts(r.score)} {t('common.pts')}    →    {later ? `${fmtTime(later.at, lang)}  ${pts(later.score)} ${t('common.pts')}` : '…'}
+          <p className="mt-2.5 flex items-center gap-2 text-sm font-medium text-primary">
+            <span>{fmtTime(dep, lang)} · {pts(r.score)} {t('common.pts')}</span><Icon name="arrow" size={15} className="shrink-0" /><span>{later ? `${fmtTime(later.at, lang)} · ${pts(later.score)} ${t('common.pts')}` : '…'}</span>
           </p>
         </section>
 

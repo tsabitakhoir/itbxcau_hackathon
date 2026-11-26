@@ -49,21 +49,20 @@ export default function MapPage() {
         </MapView>
       </div>
 
-      <div className="absolute inset-x-0 top-0 z-[500] bg-surface px-6 pb-3 pt-[max(3.5rem,env(safe-area-inset-top))]">
+      <div className="absolute inset-x-0 top-0 z-[500] bg-surface px-5 pb-2.5 pt-[max(3.25rem,env(safe-area-inset-top))]">
         <div className="flex items-start justify-between">
-          <p className="text-xl font-bold leading-7 text-text">{APP_NAME}</p>
-          <button onClick={() => nav('/mode?from=home')} className="-mr-1 -mt-1.5 min-h-11 rounded-xl px-3 text-left" aria-label={`${t('c01.travelSettings')}: ${t(`mode.${prefs.mode}`)}`}>
-            <span className="block text-[10px] font-medium leading-5 text-muted">{t('c01.travelSettings')}</span>
-            <span className="flex items-center gap-1 text-[11px] font-medium leading-[17px] text-text-2"><Icon name={prefs.mode === 'walk' ? 'walk' : 'wheelchair'} size={13} />{t(`mode.${prefs.mode}`)}</span>
+          <img src="/gilon.jpeg" alt={APP_NAME} className="h-11 w-11 shrink-0 object-contain" />
+          <button onClick={() => nav('/mode?from=home')} className="-mr-1 -mt-1 min-h-11 rounded-full bg-surface-2 px-3 text-left" aria-label={`${t('c01.travelSettings')}: ${t(`mode.${prefs.mode}`)}`}>
+            <span className="flex items-center gap-1.5 text-xs font-medium text-text-2"><Icon name={prefs.mode === 'walk' ? 'walk' : 'wheelchair'} size={14} />{t(`mode.${prefs.mode}`)}<Icon name="chevDown" size={15} className="text-muted" /></span>
           </button>
         </div>
-        <h1 className="page-heading mt-3 text-text">{t('c01.heading')}</h1>
-        <button onClick={() => nav('/plan')} className="mt-3 flex h-14 w-full items-center gap-3 rounded-[18px] bg-surface-2 px-[18px] text-left">
+        <h1 className="page-heading mt-2 text-text">{t('c01.heading')}</h1>
+        <button onClick={() => nav('/plan')} className="mt-2 flex h-12 w-full items-center gap-3 rounded-2xl bg-surface-2 px-4 text-left">
           <Icon name="search" size={20} className="text-muted" />
-          <span className="text-[17px] font-medium text-muted">{t('c01.search')}</span>
+          <span className="text-[15px] font-medium text-muted">{t('c01.search')}</span>
         </button>
-        <div className="mt-3 flex items-center justify-between">
-          <button onClick={() => nav('/plan')} className="flex min-h-11 items-center gap-1.5 text-[13px] font-medium text-text-2">{depLabel}<span className="text-muted">⌄</span></button>
+        <div className="mt-2 flex items-center justify-between">
+          <button onClick={() => nav('/plan')} className="flex min-h-10 items-center gap-1.5 rounded-full bg-surface-2 px-3 text-xs font-medium text-text-2"><Icon name="clock" size={14} />{depLabel}<Icon name="chevDown" size={15} className="text-muted" /></button>
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1.5 text-xs font-medium text-text-2"><Icon name="volume" size={15} />{t('c01.voice')}</span>
             <Toggle on={prefs.voice} onChange={setVoice} label={t('c01.voice')} />

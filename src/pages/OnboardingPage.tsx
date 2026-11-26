@@ -18,7 +18,7 @@ export default function OnboardingPage() {
   );
   return (
     <div className="flex h-full flex-col px-6 pb-8 pt-16">
-      <p className="text-[26px] font-extrabold tracking-[-0.03em] text-primary">{APP_NAME}</p>
+      <img src="/gilon.jpeg" alt={APP_NAME} className="h-12 w-12 object-contain" />
       <h1 className="mt-8 text-2xl font-bold">{t('s02.title')}</h1>
       <p className="mt-2 text-sm text-muted">{t('s02.body')}</p>
       <h2 className="mt-8 text-base font-bold">{t('s02.language')}</h2>

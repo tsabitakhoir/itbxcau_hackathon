@@ -1,1 +1,1 @@
-{ "name": "GIL:ON", "short_name": "GIL:ON", "start_url": "/", "display": "standalone", "background_color": "#f7f9fc", "theme_color": "#527dd0", "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }] }
+{ "name": "GIL:ON", "short_name": "GIL:ON", "start_url": "/", "display": "standalone", "background_color": "#f7f9fc", "theme_color": "#527dd0", "icons": [{ "src": "/gilon.jpeg", "sizes": "any", "type": "image/svg+xml" }] }
