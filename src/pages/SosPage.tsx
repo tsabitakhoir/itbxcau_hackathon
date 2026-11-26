@@ -45,11 +45,11 @@ export default function SosPage() {
         right={demo ? <span className="mr-3 rounded-[14px] bg-surface-2 px-3.5 py-1.5 text-[11px] font-medium text-danger-text">{t('c06.demo')}</span> : undefined} />
       <div className="flex-1 overflow-y-auto px-6 pb-8">
         {!res ? <>
-          <h2 className="mt-6 text-[26px] font-bold">{t('c06.heading')}</h2>
+          <h2 className="page-heading mt-6">{t('c06.heading')}</h2>
           <p className="mt-2 text-sm text-muted">{t('c06.sub', { n: 3 })}</p>
           <div className="mx-auto mt-8 grid h-[186px] w-[186px] place-items-center rounded-full bg-danger-soft">
             <div className="grid h-[162px] w-[162px] place-items-center rounded-full bg-danger text-on-primary" aria-live="assertive">
-              <div className="text-center"><p className="text-[74px] font-bold leading-none">{Math.max(count, 0)}</p><p className="mt-2 text-xs font-medium">{t('c06.secondsTo')}</p></div>
+              <div className="text-center"><p className="text-[60px] font-bold leading-none">{Math.max(count, 0)}</p><p className="mt-2 text-xs font-medium">{t('c06.secondsTo')}</p></div>
             </div>
           </div>
           <p className="mt-6 text-center text-[13px] text-muted">{t('c06.mistake')}</p>
@@ -57,7 +57,7 @@ export default function SosPage() {
         </> : <>
           <div className="mt-6 flex items-center gap-3">
             <span className="relative flex h-4 w-4"><span className="absolute h-full w-full animate-ping rounded-full bg-danger" /><span className="relative h-4 w-4 rounded-full bg-danger" /></span>
-            <h2 className="text-[26px] font-bold">{t('c06.active')}</h2>
+            <h2 className="page-heading">{t('c06.active')}</h2>
           </div>
           <p className="mt-2 text-sm text-muted">{t('c06.activeBody', { name: contact })}</p>
           <div className="mt-6 space-y-3">

@@ -28,7 +28,7 @@ export default function ArrivedPage() {
       <TopBar title={t('c08.title')} onBack={() => nav('/map', { replace: true })} />
       <div className="flex-1 overflow-y-auto px-6 pb-6">
         <div className="mx-auto mt-5 grid h-[84px] w-[84px] place-items-center rounded-full bg-primary-soft text-primary"><Icon name="check" size={40} /></div>
-        <h2 className="mt-5 text-center text-[25px] font-bold text-text">{t('c08.heading')}</h2>
+        <h2 className="page-heading mt-5 text-center">{t('c08.heading')}</h2>
         <p className="mt-1 text-center text-[13px] text-muted">{trip?.destination.label ?? ''} · {t('c08.arrivedAt', { time: fmtTime(arrivedAt, lang) })}</p>
 
         <div className="mt-5 flex h-[57px] items-center gap-4 rounded-[18px] bg-surface-2 px-[17px] text-[13px] font-medium text-text">

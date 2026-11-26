@@ -17,7 +17,7 @@ export default function ModePage() {
         className={`block w-full rounded-[24px] px-6 pb-6 pt-[22px] text-left transition active:scale-[.99] ${on ? 'bg-primary-soft' : 'bg-surface-2'}`}>
         <span className="flex items-center gap-2.5">
           <Icon name={mode === 'walk' ? 'walk' : 'wheelchair'} size={26} className="text-text" />
-          <span className="text-2xl font-bold leading-9 text-text">{title}</span>
+          <span className="section-heading text-text">{title}</span>
         </span>
         <span className="mt-2 block text-[15px] leading-[23px] text-text-2">{lead}</span>
         <span className="mt-2.5 block text-sm leading-[21px] text-muted">{body}</span>
@@ -27,9 +27,9 @@ export default function ModePage() {
   };
   return (
     <div className="flex h-full flex-col overflow-y-auto px-6 pb-8 pt-[max(3.75rem,env(safe-area-inset-top))]">
-      <p className="text-[22px] font-bold leading-[33px] text-text">{APP_NAME}</p>
+      <p className="text-xl font-bold leading-7 text-text">{APP_NAME}</p>
       <p className="mt-6 text-sm font-medium text-primary">{t('c00.eyebrow')}</p>
-      <h1 className="mt-3 text-[30px] font-bold leading-[45px] text-text">{t('c00.title')}</h1>
+      <h1 className="page-heading mt-3 text-text">{t('c00.title')}</h1>
       <p className="mt-3 text-[15px] text-muted">{t('c00.sub')}</p>
       <div className="mt-6 space-y-4">
         <Card mode="walk" title={t('mode.walk')} lead={t('c00.walkLead')} body={t('c00.walkBody')} cta={t('c00.walkCta')} />

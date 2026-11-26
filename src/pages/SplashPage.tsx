@@ -12,7 +12,7 @@ export default function SplashPage() {
   useEffect(() => { const a = setTimeout(() => setPhase('ok'), 1600); const b = setTimeout(next, 2400); return () => { clearTimeout(a); clearTimeout(b); }; }, []); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <div className="flex h-full flex-col items-center justify-center gap-6 px-8 text-center">
-      <p className="text-[40px] font-extrabold tracking-[-0.03em] text-primary">{APP_NAME}</p>
+      <p className="text-[32px] font-extrabold tracking-[-0.03em] text-primary">{APP_NAME}</p>
       <p className="-mt-4 text-sm text-muted">{t('c01.tagline')}</p>
       <div className="relative mt-6 grid h-40 w-40 place-items-center rounded-full bg-primary-soft">
         <Icon name={phase === 'ok' ? 'check' : 'user'} size={64} className={phase === 'ok' ? 'text-safe-line' : 'text-primary'} />

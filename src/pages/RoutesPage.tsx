@@ -34,7 +34,7 @@ export default function RoutesPage() {
       <button onClick={() => setSel(k)} aria-pressed={active}
         className={`relative rounded-route-card px-[18px] pb-4 pt-[15px] text-left transition ${safe ? 'bg-primary-soft' : 'bg-surface-2'} ${active ? 'ring-2 ring-primary' : ''}`}>
         <p className={`text-[13px] font-medium ${safe ? 'text-primary' : 'text-muted'}`}>{t(`kind.${k}`)}</p>
-        <p className="mt-1.5 text-[28px] font-bold leading-[42px] text-text">{t('common.min', { n: minutes(r) })}</p>
+        <p className="mt-1.5 text-2xl font-bold leading-8 text-text">{t('common.min', { n: minutes(r) })}</p>
         <p className="mt-1 text-sm text-muted">{km(r.length_m)}</p>
         <p className={`mt-1.5 text-[13px] font-medium ${safe ? 'text-primary' : 'text-text-2'}`}>{t('c03.score', { n: `${pts(r.score)}` })}</p>
         {wheelchair && <p className="mt-1 text-[11px] font-medium">{accessLine(r)}</p>}
@@ -60,7 +60,8 @@ export default function RoutesPage() {
       </div>
       <div className="sheet relative z-[600] -mt-3 flex-1 overflow-y-auto px-6 pb-36 pt-3">
         <div className="sheet-handle" />
-        <h2 className="mt-6 text-2xl font-bold leading-9 text-text">{headline}</h2>
+        <h2 className="page-heading mt-6 text-text">{headline}</h2>
+        {plan.calculation_basis === 'forecast' && <p className="mt-2 text-xs leading-5 text-muted">{t('c03.forecastNote')}</p>}
         {wheelchair && <p className="mt-1 flex items-center gap-1.5 text-xs font-medium text-primary"><Icon name="wheelchair" size={15} />{t('c03.wheelchairOn')}</p>}
         <div className="mt-4 grid grid-cols-2 gap-2.5">
           <Card k="fastest" r={f} />

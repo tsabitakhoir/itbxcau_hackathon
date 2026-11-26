@@ -1,5 +1,5 @@
 // C-02 Plan your route (Figma: C-02 Plan your route · EN, node 64:93)
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { listPlaces, planRoutes, searchPlaces } from '../api';
 import type { Place } from '../core/types';
@@ -9,10 +9,24 @@ import { ITB_GATE, fmtTime, useGeolocation } from '../components/geo';
 import { useT } from '../i18n';
 import { useStore, type Endpoint } from '../state/store';
 
-function nextSlots(n = 3) {
-  const out: Date[] = []; const d = new Date(); d.setSeconds(0, 0); d.setMinutes(Math.ceil((d.getMinutes() + 1) / 15) * 15);
-  for (let i = 0; i < n; i++) out.push(new Date(d.getTime() + i * 15 * 60e3));
-  return out;
+function nextQuarterHour() {
+  const d = new Date(); d.setSeconds(0, 0); d.setMinutes(Math.ceil((d.getMinutes() + 1) / 15) * 15);
+  return d;
+}
+function timeValue(d: Date) {
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+function timeForDisplay(value: string) {
+  const [hours, minutes] = value.split(':').map(Number);
+  const date = new Date(); date.setHours(hours, minutes, 0, 0);
+  return date;
+}
+const TIME_OPTIONS = Array.from({ length: 96 }, (_, i) => `${String(Math.floor(i / 4)).padStart(2, '0')}:${String((i % 4) * 15).padStart(2, '0')}`);
+function upcomingTime(value: string) {
+  const [hours, minutes] = value.split(':').map(Number);
+  const date = new Date(); date.setHours(hours, minutes, 0, 0);
+  if (date <= new Date()) date.setDate(date.getDate() + 1);
+  return date;
 }
 type Pick = number | 'me';
 
@@ -23,13 +37,13 @@ export default function PlanPage() {
   const [from, setFrom] = useState<Pick>('me');
   const [to, setTo] = useState<Pick | null>(null);
   const [dep, setDep] = useState<string>('now');
+  const [timeChoice, setTimeChoice] = useState(() => timeValue(nextQuarterHour()));
   const [query, setQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Place[]>([]);
   const [searched, setSearched] = useState(false);
   const [searching, setSearching] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const slots = useMemo(() => nextSlots(), []);
   useEffect(() => { listPlaces().then(setPlaces).catch(() => setPlaces([])); }, []);
 
   const name = (p: Place) => (lang === 'ko' ? p.name_ko : lang === 'id' ? p.name_id : p.name_en ?? p.name_id);
@@ -39,13 +53,14 @@ export default function PlanPage() {
   };
   const label = (k: Pick | null) => (k == null ? t('c02.pickDestination') : k === 'me' ? ep(k).label : [...(places ?? []), ...searchResults].some((p) => p.id === k) ? ep(k).label : '…');
   const depDate = dep === 'now' ? new Date() : new Date(dep);
+  const departureIsTomorrow = dep !== 'now' && depDate.toDateString() !== new Date().toDateString();
 
   async function compare() {
     if (to == null || (!places && !searchResults.length)) return;
     setBusy(true); setErr(null);
     try {
       const origin = ep(from), destination = ep(to);
-      const plan = await planRoutes({ origin, destination, departure_at: depDate, mode: store.prefs.mode });
+      const plan = await planRoutes({ origin, destination, departure_at: depDate, departure_mode: dep === 'now' ? 'now' : 'scheduled', mode: store.prefs.mode });
       store.set({ origin, destination, departure: depDate.toISOString(), plan });
       nav('/routes');
     } catch (e) { setErr(t(errKey(e))); } finally { setBusy(false); }
@@ -64,7 +79,7 @@ export default function PlanPage() {
     <div className="flex h-full flex-col">
       <TopBar title={t('c02.title')} />
       <div className="flex-1 overflow-y-auto px-6 pb-36">
-        <h2 className="mt-4 text-[26px] font-bold leading-[39px] text-text">{t('c02.heading')}</h2>
+        <h2 className="page-heading mt-4 text-text">{t('c02.heading')}</h2>
         <p className="mt-1.5 flex items-center gap-1.5 text-sm text-muted"><Icon name={store.prefs.mode === 'walk' ? 'walk' : 'wheelchair'} size={15} />{t(store.prefs.mode === 'walk' ? 'c02.subWalk' : 'c02.subWheelchair')}</p>
 
         <section className="relative mt-6 rounded-[22px] bg-surface-2 py-4 pl-[18px] pr-14">
@@ -91,13 +106,20 @@ export default function PlanPage() {
         <div className="mt-6 flex items-baseline justify-between">
           <h3 className="text-lg font-bold text-text-3">{t('c02.departure')}</h3><span className="text-xs text-muted">{t('c02.interval')}</span>
         </div>
-        <div className="mt-3 grid grid-cols-4 gap-2.5">
-          {[{ v: 'now', l: t('c02.now') }, ...slots.map((s) => ({ v: s.toISOString(), l: fmtTime(s, lang) }))].map((o) => (
-            <button key={o.v} onClick={() => setDep(o.v)} aria-pressed={dep === o.v}
-              className={`h-11 rounded-[14px] text-sm ${dep === o.v ? 'bg-primary-soft-2 font-bold text-primary' : 'bg-surface-2 font-medium text-muted'}`}>{o.l}</button>
-          ))}
+        <div className="mt-3 grid grid-cols-2 gap-2.5">
+          <button type="button" onClick={() => setDep('now')} aria-pressed={dep === 'now'}
+            className={`h-12 rounded-[14px] text-sm ${dep === 'now' ? 'bg-primary-soft-2 font-bold text-primary' : 'bg-surface-2 font-medium text-muted'}`}>{t('c02.now')}</button>
+          <label className="block min-w-0">
+            <span className="sr-only">{t('c02.departure')}</span>
+            <select aria-label={t('c02.departure')} value={dep === 'now' ? '' : timeChoice}
+              onChange={(e) => { const value = e.target.value; if (!value) return; setTimeChoice(value); setDep(upcomingTime(value).toISOString()); }}
+              className={`h-12 w-full min-w-0 rounded-[14px] border-0 px-3 text-center text-sm font-semibold outline-none focus:ring-2 focus:ring-primary ${dep !== 'now' ? 'bg-primary-soft-2 text-primary' : 'bg-surface-2 text-text'}`}>
+              <option value="" disabled>{t('c02.selectTime')}</option>
+              {TIME_OPTIONS.map((value) => <option key={value} value={value}>{fmtTime(timeForDisplay(value), lang)}</option>)}
+            </select>
+          </label>
         </div>
-        <p className="mt-3.5 text-xs text-muted">{t('c02.scoreBasis', { time: fmtTime(depDate, lang) })}</p>
+        <p className="mt-3.5 text-xs leading-5 text-muted">{t(dep === 'now' ? 'c02.currentBasis' : 'c02.forecastBasis', { time: fmtTime(depDate, lang) })}{departureIsTomorrow && <span className="ml-1 font-medium">{t('c02.nextDay')}</span>}</p>
 
         <div className="mt-7 flex items-baseline justify-between">
           <h3 className="text-lg font-bold text-text-3">{t(searched ? 'c02.searchResults' : 'c02.places')}</h3><span className="text-xs text-muted">{t('c02.placeCount', { n: searched ? searchResults.length : places?.length ?? 0 })}</span>
