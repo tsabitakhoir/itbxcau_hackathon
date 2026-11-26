@@ -16,7 +16,7 @@ jobs:
         with: { node-version: 22, cache: npm }
       - run: npm ci
       - run: npm test
-      - run: npm run build-graph
+      - run: npm run build-graph -- --keep-existing
       - name: Commit graph if it changed
         run: |
           git config user.name "github-actions[bot]"
