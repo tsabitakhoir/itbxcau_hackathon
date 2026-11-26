@@ -1,4 +1,4 @@
-// C-02 Plan route (Figma: EN · C-02 Plan route)
+// C-02 Plan your route (Figma: C-02 Plan your route · EN, node 64:93)
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { listPlaces, planRoutes, searchPlaces } from '../api';
@@ -45,7 +45,7 @@ export default function PlanPage() {
     setBusy(true); setErr(null);
     try {
       const origin = ep(from), destination = ep(to);
-      const plan = await planRoutes({ origin, destination, departure_at: depDate });
+      const plan = await planRoutes({ origin, destination, departure_at: depDate, mode: store.prefs.mode });
       store.set({ origin, destination, departure: depDate.toISOString(), plan });
       nav('/routes');
     } catch (e) { setErr(t(errKey(e))); } finally { setBusy(false); }
@@ -64,27 +64,24 @@ export default function PlanPage() {
     <div className="flex h-full flex-col">
       <TopBar title={t('c02.title')} />
       <div className="flex-1 overflow-y-auto px-6 pb-36">
-        <h2 className="mt-3 text-2xl font-bold">{t('c02.heading')}</h2>
-        <p className="mt-1 text-[13px] text-muted">{t('c02.sub')}</p>
+        <h2 className="mt-4 text-[26px] font-bold leading-[39px] text-text">{t('c02.heading')}</h2>
+        <p className="mt-1.5 flex items-center gap-1.5 text-sm text-muted"><Icon name={store.prefs.mode === 'walk' ? 'walk' : 'wheelchair'} size={15} />{t(store.prefs.mode === 'walk' ? 'c02.subWalk' : 'c02.subWheelchair')}</p>
 
-        <section className="relative mt-6 rounded-card bg-surface py-3 pl-11 pr-14">
-          <span className="absolute left-[18px] top-[22px] h-3 w-3 rounded-full bg-safe-line" />
-          <span className="absolute left-[23px] top-[38px] h-[35px] w-0.5 bg-line" />
-          <Icon name="pin" size={22} className="absolute left-[13px] top-[76px] text-safe-line" />
-          <p className="text-[11px] text-muted">{t('c02.from')}</p>
-          <p className="truncate text-sm font-medium">{label(from)}</p>
-          <p className="mt-4 text-[11px] text-muted">{t('c02.to')}</p>
-          <p className={`truncate text-[15px] font-bold ${to == null ? 'text-muted' : ''}`}>{label(to)}</p>
+        <section className="relative mt-6 rounded-[22px] bg-surface-2 py-4 pl-[18px] pr-14">
+          <p className="text-xs text-muted">{t('c02.from')}</p>
+          <p className="mt-1 truncate text-[15px] font-medium text-text-3">{label(from)}</p>
+          <p className="mt-3.5 text-xs text-muted">{t('c02.to')}</p>
+          <p className={`mt-1 truncate text-base font-bold ${to == null ? 'text-muted' : 'text-text'}`}>{label(to)}</p>
           <button aria-label={t('c02.swap')} disabled={to == null} onClick={() => { if (to != null) { setFrom(to); setTo(from); } }}
-            className="absolute right-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center disabled:opacity-40"><Icon name="swap" /></button>
+            className="absolute right-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center text-text-2 disabled:opacity-40"><Icon name="swap" size={20} /></button>
         </section>
 
         <form onSubmit={findDestination} className="mt-5">
-          <label htmlFor="destination-search" className="mb-2 block text-sm font-bold">{t('c02.searchHeading')}</label>
+          <label htmlFor="destination-search" className="sr-only">{t('c02.searchHeading')}</label>
           <div className="flex gap-2">
             <input id="destination-search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('c02.searchPlaceholder')} minLength={3} required
-              className="h-12 min-w-0 flex-1 rounded-card bg-surface-2 px-3 text-sm outline-none focus:ring-2 focus:ring-primary" />
-            <button type="submit" disabled={searching || query.trim().length < 3} className="h-12 rounded-card bg-primary px-4 text-sm font-bold text-on-primary disabled:opacity-50">
+              className="h-12 min-w-0 flex-1 rounded-[14px] bg-surface-2 px-4 text-sm text-text outline-none placeholder:text-muted focus:ring-2 focus:ring-primary" />
+            <button type="submit" disabled={searching || query.trim().length < 3} className="h-12 rounded-[14px] bg-primary-soft-2 px-4 text-sm font-bold text-primary disabled:opacity-50">
               {searching ? t('common.loading') : t('c02.searchButton')}
             </button>
           </div>
@@ -92,28 +89,28 @@ export default function PlanPage() {
         </form>
 
         <div className="mt-6 flex items-baseline justify-between">
-          <h3 className="text-base font-bold">{t('c02.departure')}</h3><span className="text-[11px] text-muted">{t('c02.interval')}</span>
+          <h3 className="text-lg font-bold text-text-3">{t('c02.departure')}</h3><span className="text-xs text-muted">{t('c02.interval')}</span>
         </div>
-        <div className="mt-3 grid grid-cols-4 gap-1.5">
+        <div className="mt-3 grid grid-cols-4 gap-2.5">
           {[{ v: 'now', l: t('c02.now') }, ...slots.map((s) => ({ v: s.toISOString(), l: fmtTime(s, lang) }))].map((o) => (
             <button key={o.v} onClick={() => setDep(o.v)} aria-pressed={dep === o.v}
-              className={`h-[43px] rounded-xl text-[13px] ${dep === o.v ? 'bg-primary font-bold text-on-primary' : 'bg-surface font-medium text-muted'}`}>{o.l}</button>
+              className={`h-11 rounded-[14px] text-sm ${dep === o.v ? 'bg-primary-soft-2 font-bold text-primary' : 'bg-surface-2 font-medium text-muted'}`}>{o.l}</button>
           ))}
         </div>
-        <p className="mt-3 text-xs text-muted">{t('c02.scoreBasis', { time: fmtTime(depDate, lang) })}</p>
+        <p className="mt-3.5 text-xs text-muted">{t('c02.scoreBasis', { time: fmtTime(depDate, lang) })}</p>
 
-        <div className="mt-8 flex items-baseline justify-between">
-          <h3 className="text-base font-bold">{t(searched ? 'c02.searchResults' : 'c02.places')}</h3><span className="text-xs text-muted">{t('c02.placeCount', { n: searched ? searchResults.length : places?.length ?? 0 })}</span>
+        <div className="mt-7 flex items-baseline justify-between">
+          <h3 className="text-lg font-bold text-text-3">{t(searched ? 'c02.searchResults' : 'c02.places')}</h3><span className="text-xs text-muted">{t('c02.placeCount', { n: searched ? searchResults.length : places?.length ?? 0 })}</span>
         </div>
-        {!places && !searched ? <div className="mt-3 grid grid-cols-2 gap-2.5">{Array.from({ length: 8 }, (_, i) => <Skeleton key={i} className="h-12" />)}</div> : (
-          <ul className="mt-3 grid grid-cols-2 gap-x-2.5 gap-y-[9px]">
+        {!places && !searched ? <div className="mt-3 grid grid-cols-2 gap-2.5">{Array.from({ length: 8 }, (_, i) => <Skeleton key={i} className="h-10" />)}</div> : (
+          <ul className="mt-3 grid grid-cols-2 gap-x-2.5 gap-y-2">
             {(searched ? searchResults : places ?? []).map((p) => {
               const sel = to === p.id; const isFrom = from === p.id;
               return (
                 <li key={p.id}>
                   <button onClick={() => pick(p.id)} disabled={isFrom} aria-pressed={sel}
-                    className={`flex h-12 w-full items-center gap-1.5 rounded-card px-3.5 text-left text-xs disabled:opacity-40 ${sel ? 'bg-primary-soft-2 font-bold text-primary-strong' : 'bg-surface-2 font-medium text-muted'}`}>
-                    {sel && <Icon name="check" size={18} className="shrink-0 text-safe-line" />}<span className="line-clamp-2">{name(p)}</span>
+                    className={`flex min-h-10 w-full items-center rounded-xl px-3 py-2 text-left text-xs disabled:opacity-40 ${sel ? 'bg-primary-soft-2 font-bold text-primary' : 'bg-surface-2 font-medium text-text-2'}`}>
+                    <span className="line-clamp-2">{name(p)}</span>
                   </button>
                 </li>
               );
@@ -125,8 +122,8 @@ export default function PlanPage() {
         {err && <div className="mt-3"><ErrorBox message={err} /></div>}
       </div>
       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-bg via-bg to-transparent px-6 pb-[max(2.25rem,env(safe-area-inset-bottom))] pt-6">
-        <button className="btn-primary relative w-full" disabled={to == null || busy} onClick={compare}>
-          {busy ? t('common.loading') : t('c02.compare')}<Icon name="arrow" size={22} className="absolute right-[18px]" />
+        <button className="btn-primary w-full" disabled={to == null || busy} onClick={compare}>
+          {busy ? t('common.loading') : t('c02.compare')}
         </button>
       </div>
     </div>

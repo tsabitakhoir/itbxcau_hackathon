@@ -4,10 +4,10 @@ import type { PlanResult, RouteKind } from '../core/types';
 import { useT } from '../i18n';
 import { token } from './MapView';
 
-const startIcon = L.divIcon({ className: '', iconSize: [22, 22], iconAnchor: [11, 11], html: '<span style="display:block;width:22px;height:22px;border-radius:50%;background:rgb(var(--color-primary));border:5px solid #fff;box-shadow:0 2px 6px rgb(38 51 72/.25)"></span>' });
-const endIcon = L.divIcon({ className: '', iconSize: [22, 22], iconAnchor: [11, 11], html: '<span style="display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgb(38 51 72/.25)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgb(38,51,72)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span>' });
+const startIcon = L.divIcon({ className: '', iconSize: [22, 22], iconAnchor: [11, 11], html: '<span style="display:block;width:22px;height:22px;border-radius:50%;background:rgb(var(--color-primary));border:5px solid #fff;box-shadow:0 2px 6px rgb(25 31 40/.25)"></span>' });
+const endIcon = L.divIcon({ className: '', iconSize: [22, 22], iconAnchor: [11, 11], html: '<span style="display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgb(25 31 40/.25)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgb(25,31,40)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span>' });
 
-/** Fastest = amber (--color-route-fast), safest = green (--color-route-safe), each with a white casing like the design. */
+/** Fastest = grey (--color-route-fast), safest = blue (--color-route-safe), each with a white casing like the design. */
 export function RouteLines({ plan, selected, onSelect, labels = false }: { plan: PlanResult; selected: RouteKind; onSelect?: (k: RouteKind) => void; labels?: boolean }) {
   const { t } = useT();
   const kinds: RouteKind[] = plan.same_route ? [selected] : selected === 'safest' ? ['fastest', 'safest'] : ['safest', 'fastest'];

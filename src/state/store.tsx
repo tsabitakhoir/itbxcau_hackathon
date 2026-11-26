@@ -1,13 +1,24 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import type { LatLng, PlanResult, Profile } from '../core/types';
-import { ensureSession } from '../api';
+import type { LatLng, PlanResult, Profile, TravelMode } from '../core/types';
+import { ensureSession, updateProfile } from '../api';
 
 export type Endpoint = LatLng & { label: string };
 export type PlanState = { origin: Endpoint | null; destination: Endpoint | null; departure: string | null; plan: PlanResult | null };
-type Ctx = PlanState & { set: (p: Partial<PlanState>) => void; profile: Profile | null; setProfile: (p: Profile) => void };
+/** Travel preferences from C-00 / Home "Travel settings". Kept on the device and mirrored to the profile. */
+export type Prefs = { mode: TravelMode; voice: boolean; chosen: boolean };
+type Ctx = PlanState & {
+  set: (p: Partial<PlanState>) => void; profile: Profile | null; setProfile: (p: Profile) => void;
+  prefs: Prefs; setPrefs: (p: Partial<Prefs>) => void;
+};
 
 const KEY = 'gil-plan';
+const PREFS = 'gil-prefs';
 const Store = createContext<Ctx | null>(null);
+
+function loadPrefs(): Prefs {
+  try { const raw = localStorage.getItem(PREFS); if (raw) return { mode: 'walk', voice: false, chosen: false, ...JSON.parse(raw) as Partial<Prefs> }; } catch { /* ignore */ }
+  return { mode: 'walk', voice: false, chosen: false };
+}
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<PlanState>(() => {
@@ -15,9 +26,20 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return { origin: null, destination: null, departure: null, plan: null };
   });
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [prefs, setPrefsState] = useState<Prefs>(loadPrefs);
   useEffect(() => { try { sessionStorage.setItem(KEY, JSON.stringify(state)); } catch { /* ignore */ } }, [state]);
+  useEffect(() => { try { localStorage.setItem(PREFS, JSON.stringify(prefs)); } catch { /* ignore */ } }, [prefs]);
   useEffect(() => { ensureSession().then(setProfile).catch(() => undefined); }, []);
-  return <Store.Provider value={{ ...state, set: (p) => setState((s) => ({ ...s, ...p })), profile, setProfile }}>{children}</Store.Provider>;
+  const setPrefs = (p: Partial<Prefs>) => {
+    setPrefsState((s) => {
+      const next = { ...s, ...p };
+      // A new travel mode makes the cached plan stale.
+      if (p.mode && p.mode !== s.mode) setState((st) => ({ ...st, plan: null }));
+      updateProfile({ travel_mode: next.mode, voice_guidance: next.voice }).then(setProfile).catch(() => undefined);
+      return next;
+    });
+  };
+  return <Store.Provider value={{ ...state, set: (p) => setState((s) => ({ ...s, ...p })), profile, setProfile, prefs, setPrefs }}>{children}</Store.Provider>;
 }
 
 // eslint-disable-next-line react-refresh/only-export-components

@@ -32,7 +32,7 @@ export default function ReportDetailPage() {
           <HazardBadge tone={r.confirmed ? 'danger' : 'caution'} size={40} />
           <div><p className="text-xl font-bold">{t(`category.${r.category}`)}</p><p className="text-xs text-muted">{days > 0 ? t('s05.daysAgo', { n: days }) : fmtTime(r.created_at, lang)}</p></div>
         </div>
-        {r.note && <p className="mt-4 rounded-card bg-surface p-4 text-sm">{r.note}</p>}
+        {r.note && <p className="mt-4 rounded-card bg-surface-2 p-4 text-sm">{r.note}</p>}
         {r.photo_url && <img src={r.photo_url} alt="" className="mt-4 max-h-56 w-full rounded-card object-cover" />}
         <div className={`mt-4 rounded-card p-4 ${r.confirmed ? 'bg-danger-soft' : 'bg-caution-soft'}`}>
           <p className={`text-sm font-bold ${r.confirmed ? 'text-danger-text' : 'text-caution'}`}>{t(r.confirmed ? 's05.confirmed' : 's05.pending')}</p>

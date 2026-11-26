@@ -1,7 +1,9 @@
 // Shared BE+FE contract (fe.md). Change only by BE+FE agreement.
 export const APP_NAME = 'GIL:ON'; // name from the Figma design
-// Bobot skor (usulan, boleh diubah). Jumlah = 1.
-export const SCORE_WEIGHTS = { lighting: 0.40, activity: 0.30, help_access: 0.30 };
+// Bobot skor keamanan (konsep 26 Nov). Jumlah = 1. Skor = 1 + 4 * Σ bobot * faktor (1-5, UI: x20 = pts).
+export const SCORE_WEIGHTS = { lighting: 0.30, facilities: 0.25, crowd: 0.20, reports: 0.25 };
+// Wheelchair mode: rute teraman menghindari tangga; ruas curam/sempit diberi penalti.
+export const WHEELCHAIR = { avoid_steps: true, steep_incline_pct: 8, narrow_width_m: 1.2 };
 export const LIT_VALUE = { yes: 1, partial: 0.6, no: 0.15, unknown: 0.5 };
 export const ROAD_ACTIVITY = { primary: 1, secondary: 0.85, tertiary: 0.7, residential: 0.5, footway: 0.4, path: 0.3, alley: 0.2 };
 // Faktor jam untuk aktivitas: [jamMulai, jamSelesai, faktor]

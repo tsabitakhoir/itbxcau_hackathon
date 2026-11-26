@@ -25,7 +25,7 @@ export default function SharedTripPage() {
   const header = (
     <header className="flex min-h-[72px] items-center gap-2 bg-surface px-6 pt-[max(1.75rem,env(safe-area-inset-top))]">
       <h1 className="h-title flex-1 truncate">{APP_NAME} · {t('c07.title')}</h1>
-      <span className="flex items-center gap-1.5 rounded-card bg-primary-soft px-2.5 py-1.5 text-[10px] text-safe"><Icon name="lock" size={15} />{t('c07.noSignIn')}</span>
+      <span className="flex items-center gap-1.5 rounded-[14px] bg-primary-soft px-2.5 py-1.5 text-[10px] text-safe"><Icon name="lock" size={15} />{t('c07.noSignIn')}</span>
     </header>
   );
   if (err && !d) return <div className="h-full">{header}<div className="p-6"><ErrorBox message={err} /></div></div>;
@@ -39,7 +39,7 @@ export default function SharedTripPage() {
     : d.status === 'arrived' ? { cls: 'bg-safe-line', title: t('c07.arrived', { name }), sub: t('c07.endedBody') }
     : d.status === 'cancelled' ? { cls: 'bg-muted', title: t('c07.cancelled'), sub: t('c07.endedBody') }
     : late ? { cls: 'bg-caution-line', title: t('c07.lateTitle'), sub: t('c07.lateBody', { n: overdue }) }
-    : { cls: 'bg-primary', title: t('c07.onTheWay', { name }), sub: `${t('c07.walkingHome')} · ${updatedAgo == null || updatedAgo < 1 ? t('c07.justNow') : t('c07.minAgo', { n: updatedAgo })}` };
+    : { cls: 'bg-surface !text-text', title: t('c07.onTheWay', { name }), sub: `${t('c07.walkingHome')} · ${updatedAgo == null || updatedAgo < 1 ? t('c07.justNow') : t('c07.minAgo', { n: updatedAgo })}` };
 
   return (
     <div className="flex h-full flex-col bg-surface">
@@ -55,9 +55,9 @@ export default function SharedTripPage() {
             </Marker>}
           </MapView>
         </div>
-        <div role={d.sos || late ? 'alert' : 'status'} className={`absolute inset-x-6 top-2 z-[500] rounded-card px-[17px] py-3 text-on-primary shadow-float ${banner.cls}`}>
-          <p className="flex items-center gap-3 text-lg font-bold"><span className="h-2 w-2 rounded-full bg-on-primary" />{banner.title}</p>
-          <p className="mt-1 text-[11px]">{banner.sub}</p>
+        <div role={d.sos || late ? 'alert' : 'status'} className={`absolute inset-x-6 top-2 z-[500] rounded-[18px] px-[17px] py-3 text-on-primary shadow-float ${banner.cls}`}>
+          <p className="text-lg font-bold">{banner.title}</p>
+          <p className="mt-1 text-[11px] opacity-80">{banner.sub}</p>
         </div>
         <SimChip className="absolute bottom-8 left-6 z-[500]" />
       </div>
@@ -68,11 +68,17 @@ export default function SharedTripPage() {
             <p className="text-2xl font-bold">{t('c07.eta', { time: fmtTime(d.eta, lang) })}</p>
             <p className="mt-1 text-[13px] text-muted">{t('c07.toPlace', { place: d.destination_label })}{d.status === 'active' && ` · ${t('c07.about', { n: minsLeft })}`}</p>
           </div>
-          <a href="tel:" className="btn min-h-11 bg-primary px-4 text-[13px] text-on-primary"><Icon name="phone" size={18} />{t('c07.contact')}</a>
+          <a href="tel:" className="btn min-h-11 rounded-[18px] bg-primary px-4 text-[13px] text-on-primary"><Icon name="phone" size={18} />{t('c07.contact')}</a>
         </div>
         <p className="mt-4 text-[11px] text-muted">{t('c07.autoStop')}</p>
         {d.sos && d.sos.lat != null && <a className="mt-3 flex min-h-11 items-center gap-2 rounded-card bg-danger-soft px-4 text-xs font-medium text-danger-text" href={`https://maps.google.com/?q=${d.sos.lat},${d.sos.lng}`} target="_blank" rel="noreferrer"><Icon name="pin" size={18} />{t('c07.sosLocation')}</a>}
-        <p className="mt-6 flex items-center justify-center gap-2 text-[10px] text-muted"><Icon name="lock" size={14} />{t('c07.expires')}</p>
+        {d.status === 'active' && !d.sos && <>
+          <hr className="mt-4 border-line" />
+          <div className="mt-4 flex items-baseline justify-between"><p className="text-[13px] font-bold text-text">{t('c07.previews')}</p><span className="text-[10px] text-muted">{t('c07.examples')}</span></div>
+          <div className="mt-3 flex items-center gap-4 rounded-[16px] bg-surface-2 px-4 py-3"><Icon name="alert" size={22} className="shrink-0 text-caution-line" /><div><p className="text-[13px] font-bold text-text">{t('c07.lateTitle')}</p><p className="text-[10px] text-text-2">{t('c07.previewLate')}</p></div></div>
+          <div className="mt-2.5 flex items-center gap-4 rounded-[16px] bg-danger-soft px-4 py-3"><Icon name="phone" size={20} className="shrink-0 text-danger-text" /><div><p className="text-[13px] font-bold text-danger-text">{t('c07.sosTitle', { name })}</p><p className="text-[10px] text-danger-text">{t('c07.sosBody')}</p></div></div>
+        </>}
+        <p className="mt-5 flex items-center justify-center gap-2 text-[10px] text-muted"><Icon name="lock" size={14} />{t('c07.expires')}</p>
       </div>
     </div>
   );

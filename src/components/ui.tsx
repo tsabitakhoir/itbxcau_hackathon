@@ -32,7 +32,7 @@ export function TopBar({ title, right, back = true, onBack, className = '' }: { 
   return (
     <header className={`flex min-h-[72px] items-center gap-2 px-3 pt-[max(1.75rem,env(safe-area-inset-top))] ${className}`}>
       {back ? <button className="grid h-11 w-11 place-items-center rounded-full text-text" aria-label={t('common.back')} onClick={onBack ?? (() => nav(-1))}><Icon name="back" /></button> : <span className="w-3" />}
-      <h1 className="h-title flex-1 truncate">{title}</h1>
+      <h1 className="h-title flex-1 truncate text-text">{title}</h1>
       {right}
     </header>
   );
@@ -85,11 +85,13 @@ export function Toast({ children }: { children: ReactNode }) {
   return <div role="status" className="pointer-events-none fixed inset-x-4 bottom-28 z-[1000] mx-auto max-w-sm rounded-card bg-text px-4 py-3 text-center text-sm text-on-primary shadow-float">{children}</div>;
 }
 
-export function Toggle({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label: string }) {
+/** Switch from the Figma Home frame (59x28, ON/OFF text inside). */
+export function Toggle({ on, onChange, label, text = true }: { on: boolean; onChange: (v: boolean) => void; label: string; text?: boolean }) {
   return (
     <button role="switch" aria-checked={on} aria-label={label} onClick={() => onChange(!on)}
-      className={`relative h-[23px] w-[47px] shrink-0 rounded-[9px] transition ${on ? 'bg-primary' : 'bg-border'}`}>
-      <span className={`absolute top-[3px] h-[17px] w-[17px] rounded-full bg-surface shadow transition-all ${on ? 'left-[27px]' : 'left-[3px]'}`} />
+      className={`relative h-7 w-[59px] shrink-0 rounded-[14px] transition ${on ? 'bg-primary' : 'bg-border'}`}>
+      <span className={`absolute top-[3px] h-[22px] w-[22px] rounded-full bg-surface shadow transition-all ${on ? 'left-[34px]' : 'left-[3px]'}`} />
+      {text && <span className={`absolute top-[7px] text-[9px] font-bold leading-[14px] ${on ? 'left-[9px] text-on-primary' : 'left-[30px] text-text-2'}`}>{on ? 'ON' : 'OFF'}</span>}
     </button>
   );
 }
@@ -114,8 +116,8 @@ export function BottomNav({ active }: { active: 'home' | 'report' | 'profile' })
     <nav className="absolute inset-x-0 bottom-0 z-[700] flex h-[81px] items-start justify-around rounded-t-sheet bg-surface px-6 pt-3 pb-[env(safe-area-inset-bottom)] shadow-sheet">
       {items.map((i) => (
         <button key={i.k} onClick={() => nav(i.to)} aria-current={active === i.k ? 'page' : undefined}
-          className={`flex min-h-12 items-center gap-2 px-3 text-xs ${active === i.k ? 'font-bold text-safe' : 'text-muted'}`}>
-          <Icon name={i.icon} size={22} className={active === i.k ? 'text-safe' : 'text-text'} />{i.label}
+          className={`flex min-h-12 items-center gap-2 px-3 text-xs ${active === i.k ? 'font-bold text-primary' : 'text-muted'}`}>
+          <Icon name={i.icon} size={22} className={active === i.k ? 'text-primary' : 'text-text'} />{i.label}
         </button>
       ))}
     </nav>

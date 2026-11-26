@@ -47,7 +47,7 @@ export default function ReportNewPage() {
           {CATS.map((c) => <button key={c} onClick={() => setCat(c)} aria-pressed={cat === c} className={`flex h-12 items-center gap-2 rounded-card px-3.5 text-left text-xs ${cat === c ? 'bg-primary-soft-2 font-bold text-primary-strong' : 'bg-surface-2 font-medium text-muted'}`}>{cat === c && <Icon name="check" size={18} className="text-safe-line" />}{t(`category.${c}`)}</button>)}
         </div>
         <h2 className="mt-5 text-base font-bold">{t('s05.photo')}</h2>
-        <label className="mt-3 flex min-h-12 cursor-pointer items-center gap-3 rounded-card bg-surface px-4 text-sm">
+        <label className="mt-3 flex min-h-12 cursor-pointer items-center gap-3 rounded-card bg-surface-2 px-4 text-sm">
           <Icon name="camera" size={20} className="text-muted" /><span className="flex-1 truncate">{photo?.name ?? t('s05.photoPick')}</span>
           <input type="file" accept="image/*" capture="environment" className="sr-only" onChange={(e) => setPhoto(e.target.files?.[0] ?? null)} />
         </label>
