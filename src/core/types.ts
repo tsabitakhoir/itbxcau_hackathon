@@ -34,7 +34,7 @@ export type RouteOption = {
   watch_areas?: WatchArea[];      // C-04 "Areas to watch out for"
   score_later?: { at: string; score: number } | null; // score at departure + 1 h (C-04)
 };
-export type AccessInfo = { steps: number; steep_m: number; narrow_m: number; lowered_kerbs: number; accessible_toilets: number; wheelchair_ok: boolean };
+export type AccessInfo = { steps: number; steep_m: number; narrow_m: number; lowered_kerbs: number; accessible_toilets: number; wheelchair_ok: boolean; rough_m?: number }; // rough_m: permukaan buruk (kerikil, tanah)
 export type Maneuver = 'depart' | 'straight' | 'slight_left' | 'left' | 'sharp_left' | 'slight_right' | 'right' | 'sharp_right' | 'arrive';
 export type NavStep = { maneuver: Maneuver; name: string | null; distance_m: number; at: [number, number] };
 export type WatchArea = { segment_id: number; name: string | null; kind: 'dark' | 'quiet' | 'report' | 'steps' | 'steep' | 'narrow'; meters: number; score: number; at: [number, number] };
@@ -51,6 +51,13 @@ export type SosResult = { sos_id: string; tel_uri: string; share_text: string; s
 export type ApiErrorCode = 'OUT_OF_AREA' | 'NO_ROUTE' | 'NOT_AUTHENTICATED' | 'ALREADY_CONFIRMED' | 'OWN_REPORT' | 'PHOTO_TOO_LARGE' | 'NOT_FOUND' | 'TRIP_ENDED' | 'NETWORK';
 export class ApiError extends Error { code: ApiErrorCode; constructor(code: ApiErrorCode, message: string) { super(message); this.code = code; } }
 
-// Graph types (public/data/bandung-graph.json)
+// Graph types (public/data/bandung-graph.json). Built by scripts/build-graph.ts or live from Overpass (src/core/osm.ts).
 export type Place = { id: number; name_id: string; name_ko: string; name_en?: string; display_name?: string; lat: number; lng: number };
-export type Graph = { version: string; city: string; simulated: boolean; bbox: [number, number, number, number]; nodes: { id: number; lat: number; lng: number }[]; segments: unknown[]; pois: unknown[]; places: Place[] };
+export type RoadType = 'primary' | 'secondary' | 'tertiary' | 'residential' | 'alley' | 'footway' | 'path';
+export type Lit = 'yes' | 'partial' | 'no' | 'unknown';
+export type PoiType = 'shop24' | 'shop' | 'police' | 'bus_stop' | 'cctv' | 'streetlight' | 'health' | 'toilet_accessible' | 'kerb_lowered';
+export type GraphNode = { id: number; lat: number; lng: number };
+export type SegmentAccess = { steps?: boolean; incline_pct?: number; surface?: string; smoothness?: string; width_m?: number; wheelchair?: 'yes' | 'limited' | 'no'; sidewalk?: 'yes' | 'no' };
+export type GraphSegment = { id: number; from: number; to: number; name: string | null; road_type: RoadType; lit: Lit; length_m: number; geometry: [number, number][]; simulated_attrs?: string[]; access?: SegmentAccess };
+export type GraphPoi = { id: number; type: PoiType; name: string | null; lat: number; lng: number; hours: string | null; simulated?: boolean };
+export type Graph = { version: string; city: string; simulated: boolean; bbox: [number, number, number, number]; nodes: GraphNode[]; segments: GraphSegment[]; pois: GraphPoi[]; places: Place[] };
