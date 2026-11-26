@@ -41,7 +41,8 @@ const elements: OsmElement[] = [
 ];
 const graph = buildGraph(elements, { version: 'test-1', city: 'test', bbox: [base.lat - 0.01, base.lng - 0.01, base.lat + 0.02, base.lng + 0.02] });
 const A = { lat: base.lat, lng: base.lng }, B = { lat: base.lat + 4 * D, lng: base.lng + 4 * D };
-const night = new Date('2026-11-26T22:30:00');
+const night = new Date('2026-11-26T22:30:00+07:00');
+const wallNight = new Date('2026-11-26T22:30:00'); // wall-clock time for isOpenAt
 
 describe('osm graph builder', () => {
   it('splits ways at junctions and drops disconnected parts', () => {
@@ -56,13 +57,13 @@ describe('osm graph builder', () => {
 
 describe('opening hours', () => {
   it('handles 24/7, past-midnight ranges, weekdays and unknown', () => {
-    expect(isOpenAt('24/7', night)).toBe(true);
+    expect(isOpenAt('24/7', wallNight)).toBe(true);
     expect(isOpenAt('18:00-02:00', new Date('2026-11-27T01:00:00'))).toBe(true);
-    expect(isOpenAt('09:00-21:00', night)).toBe(false);
+    expect(isOpenAt('09:00-21:00', wallNight)).toBe(false);
     expect(isOpenAt('Mo-Fr 08:00-17:00; Sa 08:00-12:00', new Date('2026-11-28T10:00:00'))).toBe(true); // Saturday
     expect(isOpenAt('Mo-Fr 08:00-17:00; Su off', new Date('2026-11-29T10:00:00'))).toBe(false); // Sunday
-    expect(isOpenAt(null, night)).toBeNull();
-    expect(isOpenAt('sunrise-sunset', night)).toBeNull();
+    expect(isOpenAt(null, wallNight)).toBeNull();
+    expect(isOpenAt('sunrise-sunset', wallNight)).toBeNull();
   });
 });
 
@@ -76,12 +77,12 @@ describe('scoring', () => {
   });
   it('closed shops do not count at departure time', () => {
     const shopSeg = graph.segments.find((s) => pg.near.get(s.id)!.some((p) => p.name === 'Toko'))!;
-    const day = scoreSegment(pg, shopSeg, new Date('2026-11-26T12:00:00')).open_places;
+    const day = scoreSegment(pg, shopSeg, new Date('2026-11-26T12:00:00+07:00')).open_places;
     const late = scoreSegment(pg, shopSeg, night).open_places;
     expect(day).toBeGreaterThan(late);
   });
   it('only confirmed reports change the score, and they decay', () => {
-    const now = new Date('2026-11-26T22:00:00');
+    const now = new Date('2026-11-26T22:00:00+07:00');
     const r = (confirmed: boolean, daysAgo = 0): Report => ({ id: `r${confirmed}${daysAgo}`, lat: main.geometry[0][0], lng: main.geometry[0][1], segment_id: null, category: 'harassment', note: null, photo_url: null, created_at: new Date(now.getTime() - daysAgo * 86400e3).toISOString(), confirm_count: confirmed ? 3 : 1, confirmed, is_mine: false, confirmed_by_me: false, simulated: true });
     const before = scoreSegment(pg, main, night, now).score;
     applyCommunity(pg, [r(false)]);
@@ -98,7 +99,7 @@ describe('scoring', () => {
 describe('planner', () => {
   const pg = prepareGraph(graph);
   it('fastest takes the alley, safest the lit main road within the detour limit', () => {
-    const plan = planOnGraph(pg, { origin: A, destination: B, departure_at: night, now: new Date('2026-11-26T20:00:00') });
+    const plan = planOnGraph(pg, { origin: A, destination: B, departure_at: night, now: new Date('2026-11-26T20:00:00+07:00') });
     expect(plan.fastest.length_m).toBeLessThan(plan.safest.length_m);
     expect(plan.safest.score).toBeGreaterThan(plan.fastest.score);
     expect(plan.safest.length_m).toBeLessThanOrEqual(MAX_DETOUR_RATIO * plan.fastest.length_m + 40);
@@ -123,6 +124,11 @@ describe('planner', () => {
   });
   it('rejects points outside the graph', () => {
     expect(() => planOnGraph(pg, { origin: A, destination: { lat: base.lat + 0.1, lng: base.lng }, departure_at: night })).toThrowError(/outside/);
+  });
+  it('uses Bandung time even when the phone is in another time zone', () => {
+    const a = planOnGraph(pg, { origin: A, destination: B, departure_at: new Date('2026-11-26T15:30:00Z'), now: new Date('2026-11-26T15:00:00Z') });
+    const b = planOnGraph(pg, { origin: A, destination: B, departure_at: night, now: new Date('2026-11-26T15:00:00Z') });
+    expect(a.safest.score).toBe(b.safest.score);
   });
   it('heatmap returns crowd intensities 0..1', () => {
     const h = activityHeatmap(pg, night);

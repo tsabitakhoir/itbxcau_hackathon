@@ -89,7 +89,18 @@ export type SegmentScore = { factors: Factors; score: number; lit_estimated: boo
 
 const decay = (r: Report, now: Date) => Math.pow(0.5, Math.max(0, (now.getTime() - new Date(r.created_at).getTime()) / 86_400_000) / REPORT_HALF_LIFE_DAYS);
 
-export function scoreSegment(pg: Prepared, s: GraphSegment, t: Date, now = new Date()): SegmentScore {
+/** UTC offset (minutes) of the mapped city, from its longitude: WIB +7, WITA +8, KST +9. */
+export function cityOffsetMin(pg: Prepared): number {
+  const lng = (pg.graph.bbox[1] + pg.graph.bbox[3]) / 2;
+  return lng >= 124 ? 540 : lng >= 114.5 ? 480 : 420;
+}
+/** Date whose local fields (getHours, getDay) show the city's wall clock, whatever the phone's time zone. */
+export function cityClock(t: Date, offsetMin: number): Date {
+  return new Date(t.getTime() + (offsetMin + t.getTimezoneOffset()) * 60_000);
+}
+
+export function scoreSegment(pg: Prepared, s: GraphSegment, tAbs: Date, now = new Date()): SegmentScore {
+  const t = cityClock(tAbs, cityOffsetMin(pg)); // opening hours and hour factors use Bandung / Seoul local time
   const near = pg.near.get(s.id) ?? [];
   const reports = pg.reports.get(s.id) ?? [];
 

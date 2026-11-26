@@ -3,7 +3,7 @@ import { MAX_DETOUR_RATIO, SAFETY_ALPHA, SCORE_BANDS, WALK_SPEED_MPS, WHEELCHAIR
 import { isOpenAt } from './hours';
 import { bearing, dist, pointToPolyline, turnAngle, type Pt } from './geo';
 import { dijkstra, legGeometry, legLength, snap, type CostFn, type Leg } from './routing';
-import { scorer, type Prepared, type SegmentScore } from './scoring';
+import { cityClock, cityOffsetMin, scorer, type Prepared, type SegmentScore } from './scoring';
 import {
   ApiError, type AccessInfo, type Factors, type GraphSegment, type LatLng, type Maneuver, type NavStep, type PlanResult, type Reason,
   type RouteKind, type RouteOption, type TravelMode, type WatchArea,
@@ -80,6 +80,7 @@ function buildSteps(legs: Leg[], geoms: Pt[][]): NavStep[] {
 
 function buildOption(kind: RouteKind, mode: TravelMode, legs: Leg[], pg: Prepared, o: Pt, d: Pt, t: Date, now: Date, score: (s: GraphSegment) => SegmentScore, wheelchairOk: boolean): RouteOption {
   const geoms = legs.map(legGeometry);
+  const wall = cityClock(t, cityOffsetMin(pg));
   const geometry: Pt[] = [o];
   for (const g of geoms) for (const p of g) { const last = geometry[geometry.length - 1]; if (dist(last, p) > 0.3) geometry.push(p); }
   if (dist(geometry[geometry.length - 1], d) > 0.3) geometry.push(d);
@@ -114,7 +115,7 @@ function buildOption(kind: RouteKind, mode: TravelMode, legs: Leg[], pg: Prepare
     if (!seenSeg.has(s.id)) {
       seenSeg.add(s.id);
       // count each open place once per route
-      for (const p of pg.near.get(s.id) ?? []) if ((p.type === 'shop' || p.type === 'shop24' || p.type === 'health') && isOpenFull(p, t)) open.add(p.id);
+      for (const p of pg.near.get(s.id) ?? []) if ((p.type === 'shop' || p.type === 'shop24' || p.type === 'health') && isOpenFull(p, wall)) open.add(p.id);
     }
     const issue = wheelchairIssue(s);
     if (issue === 'steps') access.steps++;
@@ -146,7 +147,7 @@ function buildOption(kind: RouteKind, mode: TravelMode, legs: Leg[], pg: Prepare
 
   const reasons: Reason[] = [];
   const dark = longest('dark'), quiet = longest('quiet');
-  if (dark) reasons.push({ code: 'DARK_STRETCH', tone: 'bad', meters: Math.round(dark.m), name: nameOfRun(dark) });
+  if (dark) reasons.push({ code: 'DARK_STRETCH', tone: dark.m >= 150 ? 'bad' : 'warn', meters: Math.round(dark.m), name: nameOfRun(dark) });
   reasons.push({ code: 'CONFIRMED_REPORTS', tone: reportIds.size ? 'bad' : 'good', count: reportIds.size });
   reasons.push({ code: 'OPEN_PLACES', tone: open.size >= 2 ? 'good' : open.size === 1 ? 'warn' : 'bad', count: open.size });
   reasons.push({ code: 'LIT_PCT', tone: litPct >= 80 ? 'good' : litPct >= 50 ? 'warn' : 'bad', pct: litPct });
