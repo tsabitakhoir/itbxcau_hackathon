@@ -3,14 +3,15 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { resetMockData, updateProfile } from '../api';
 import { DEMO_MODE, EMERGENCY_NUMBERS } from '../core/config';
-import type { Country, Lang } from '../core/types';
+import type { Country, Lang, TravelMode } from '../core/types';
 import { Icon } from '../components/Icon';
-import { BottomNav, TopBar } from '../components/ui';
+import { BottomNav, Toggle, TopBar } from '../components/ui';
+import { speak, stopSpeaking } from '../components/voice';
 import { useT } from '../i18n';
 import { useStore } from '../state/store';
 
 export default function ProfilePage() {
-  const { t, lang, setLang } = useT(); const { profile, setProfile } = useStore();
+  const { t, lang, setLang } = useT(); const { profile, setProfile, prefs, setPrefs } = useStore();
   const [name, setName] = useState(profile?.display_name ?? '');
   const save = async (p: Parameters<typeof updateProfile>[0]) => setProfile(await updateProfile(p));
   const Seg = <T extends string>({ value, opts, onChange }: { value: T; opts: [T, string][]; onChange: (v: T) => void }) => (
@@ -24,7 +25,15 @@ export default function ProfilePage() {
       <div className="flex-1 space-y-5 overflow-y-auto px-6 pb-28">
         <section className="card space-y-2">
           <label className="text-[11px] text-muted" htmlFor="dn">{t('s06.name')}</label>
-          <input id="dn" className="input" value={name} onChange={(e) => setName(e.target.value)} onBlur={() => name.trim() && save({ display_name: name.trim() })} />
+          <input id="dn" className="input bg-surface" value={name} onChange={(e) => setName(e.target.value)} onBlur={() => name.trim() && save({ display_name: name.trim() })} />
+        </section>
+        <section className="card space-y-3">
+          <p className="text-[11px] text-muted">{t('c01.travelSettings')}</p>
+          <Seg<TravelMode> value={prefs.mode} opts={[['walk', t('mode.walk')], ['wheelchair', t('mode.wheelchair')]]} onChange={(m) => setPrefs({ mode: m, chosen: true })} />
+          <div className="flex items-center justify-between pt-1">
+            <span><span className="block text-sm font-medium text-text">{t('c01.voice')}</span><span className="block text-[11px] text-muted">{t('s06.voiceSub')}</span></span>
+            <Toggle on={prefs.voice} label={t('c01.voice')} onChange={(v) => { setPrefs({ voice: v }); if (v) speak(t('voice.on'), lang); else stopSpeaking(); }} />
+          </div>
         </section>
         <section className="card space-y-3">
           <p className="text-[11px] text-muted">{t('s02.language')}</p>

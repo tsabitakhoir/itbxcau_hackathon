@@ -42,7 +42,7 @@ export default function SosPage() {
   return (
     <div className="flex h-full flex-col">
       <TopBar title={t('c06.title')} onBack={() => (res ? safe() : nav(-1))}
-        right={demo ? <span className="mr-3 rounded-card bg-primary-soft px-3.5 py-1.5 text-[11px] font-medium text-danger-text">{t('c06.demo')}</span> : undefined} />
+        right={demo ? <span className="mr-3 rounded-[14px] bg-surface-2 px-3.5 py-1.5 text-[11px] font-medium text-danger-text">{t('c06.demo')}</span> : undefined} />
       <div className="flex-1 overflow-y-auto px-6 pb-8">
         {!res ? <>
           <h2 className="mt-6 text-[26px] font-bold">{t('c06.heading')}</h2>
