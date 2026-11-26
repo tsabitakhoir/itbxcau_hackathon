@@ -2,16 +2,16 @@
 import { distLL } from '../core/geo';
 import { ITB_PLACES } from '../core/osm';
 import { ApiError, type Place } from '../core/types';
-import { loadGraph } from './engine';
 
 const GEOCODE_CACHE_MS = 24 * 60 * 60_000;
 
+/** The 8 pilot destinations are a fixed list: no need to wait for the 2 MB road graph. */
 export async function listPlaces(): Promise<Place[]> {
-  try { const g = await loadGraph(); return g.places.length ? g.places : ITB_PLACES; } catch { return ITB_PLACES; }
+  return ITB_PLACES;
 }
 
 async function requestJson<T>(url: string): Promise<T> {
-  const controller = new AbortController(); const timer = window.setTimeout(() => controller.abort(), 20_000);
+  const controller = new AbortController(); const timer = window.setTimeout(() => controller.abort(), 8_000);
   try {
     const response = await fetch(url, { signal: controller.signal });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);

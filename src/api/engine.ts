@@ -12,7 +12,7 @@ import { applyCommunity, cityClock, hourFactor, prepareGraph, type Prepared, typ
 import { ApiError, type CalculationBasis, type DepartureMode, type Graph, type HeatPoint, type LatLng, type PlanResult, type Report, type TravelMode } from '../core/types';
 
 const STATIC_URL = `${import.meta.env.BASE_URL ?? '/'}data/bandung-graph.json`;
-const OVERPASS = [import.meta.env.VITE_OVERPASS_URL, 'https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'].filter(Boolean) as string[];
+const OVERPASS = [...new Set([import.meta.env.VITE_OVERPASS_URL, 'https://overpass-api.de/api/interpreter', 'https://overpass.private.coffee/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'].filter(Boolean) as string[])];
 const VALHALLA_URL = (import.meta.env.VITE_VALHALLA_URL || 'https://valhalla1.openstreetmap.de').replace(/\/$/, '');
 const LIVE_PAD_M = 600;        // margin around origin/destination for a live graph
 const LIVE_MAX_SPAN_M = 9000;  // larger trips are not a walking use case
@@ -23,28 +23,33 @@ export type Community = { reports: () => Promise<Report[]>; ratings: () => Promi
 let staticPg: Promise<Prepared | null> | null = null;
 const live = new Map<string, Promise<Prepared>>();
 let lastPg: Prepared | null = null;
+const liveReady: Prepared[] = []; // live graphs already downloaded (reused for nearby trips)
 
 function loadStatic(): Promise<Prepared | null> {
   staticPg ??= fetch(STATIC_URL)
     .then((r) => (r.ok ? (r.json() as Promise<Graph>) : null))
     .then((g) => (g && g.segments?.length ? prepareGraph(g) : null))
-    .catch(() => null);
+    .catch(() => null)
+    .then((pg) => { if (!pg) staticPg = null; return pg; }); // a failed download is retried next time, not cached
   return staticPg;
 }
 
-async function overpass(query: string): Promise<OsmElement[]> {
-  let lastErr: unknown = null;
-  for (const url of OVERPASS) {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 12_000);
-    try {
+/** Download + prepare the ITB graph in the background so the first route is instant. */
+export function warmUp() { void loadStatic(); }
+
+/** Ask all Overpass mirrors at once and take the first good answer (they are often slow or busy). */
+async function overpass(query: string, timeoutMs = 8_000): Promise<OsmElement[]> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    return await Promise.any(OVERPASS.map(async (url) => {
       const res = await fetch(url, { method: 'POST', body: new URLSearchParams({ data: query }), signal: ctrl.signal });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = (await res.json()) as { elements: OsmElement[] };
-      return json.elements;
-    } catch (e) { lastErr = e; } finally { clearTimeout(timer); }
-  }
-  throw new ApiError('NETWORK', `Map data (OpenStreetMap) is unavailable: ${String(lastErr)}`);
+      return ((await res.json()) as { elements: OsmElement[] }).elements;
+    }));
+  } catch (e) {
+    throw new ApiError('NETWORK', `Map data (OpenStreetMap) is unavailable: ${String(e)}`);
+  } finally { clearTimeout(timer); ctrl.abort(); }
 }
 
 type ValhallaManeuver = { type?: number; instruction?: string; street_names?: string[]; begin_shape_index?: number; length?: number };
@@ -97,7 +102,7 @@ async function fallbackRoutes(i: { origin: LatLng; destination: LatLng; departur
     costing_options: { pedestrian: { type: mode === 'wheelchair' ? 'wheelchair' : 'foot' } },
   };
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 18_000);
+  const timer = setTimeout(() => controller.abort(), 12_000);
   try {
     const url = `${VALHALLA_URL}/route?json=${encodeURIComponent(JSON.stringify(payload))}`;
     const response = await fetch(url, { headers: { 'X-Client-Id': 'GIL:ON; github.com/tsabitakhoir/itbxcau_hackathon' }, signal: controller.signal });
@@ -145,10 +150,12 @@ function liveGraph(box: [number, number, number, number]): Promise<Prepared> {
   const key = box.map((x) => x.toFixed(3)).join(',');
   let p = live.get(key);
   if (!p) {
-    p = overpass(overpassQuery(box, 45)).then((els) => {
+    p = overpass(overpassQuery(box, 25)).then((els) => {
       const g = buildGraph(els, { version: `osm-live-${new Date().toISOString().slice(0, 10)}`, city: 'live', bbox: box, places: ITB_PLACES });
       if (!g.segments.length) throw new ApiError('OUT_OF_AREA', 'No mapped streets here');
-      return prepareGraph(g);
+      const pg = prepareGraph(g);
+      liveReady.push(pg);
+      return pg;
     });
     p.catch(() => live.delete(key));
     live.set(key, p);
@@ -162,7 +169,12 @@ async function graphFor(points: Pt[]): Promise<Prepared> {
   if (st && points.every((p) => inBbox(p, st.graph.bbox) && snap(st, p))) return st;
   const span = Math.max(...points.flatMap((a) => points.map((b) => dist(a, b))));
   if (span > LIVE_MAX_SPAN_M) throw new ApiError('OUT_OF_AREA', 'Too far for a walking route');
-  return liveGraph(bboxOf(points, LIVE_PAD_M));
+  const ready = liveReady.find((pg) => points.every((p) => inBbox(p, pg.graph.bbox) && snap(pg, p)));
+  if (ready) return ready;
+  // round the box outward to a ~550 m grid so small moves of the user reuse the same download
+  const G = 0.005;
+  const b = bboxOf(points, LIVE_PAD_M);
+  return liveGraph([Math.floor(b[0] / G) * G, Math.floor(b[1] / G) * G, Math.ceil(b[2] / G) * G, Math.ceil(b[3] / G) * G]);
 }
 
 export async function loadGraph(): Promise<Graph> {
@@ -171,24 +183,38 @@ export async function loadGraph(): Promise<Graph> {
   return (await liveGraph(ITB_BOX)).graph;
 }
 
+/** True when both points are covered by the bundled ITB graph (no network needed). */
+async function inStaticArea(points: Pt[]): Promise<boolean> {
+  const st = await loadStatic();
+  return !!st && points.every((p) => inBbox(p, st.graph.bbox) && snap(st, p));
+}
+
 export async function planRoutes(i: { origin: LatLng; destination: LatLng; departure_at: Date; departure_mode?: DepartureMode; mode?: TravelMode }, community: Community): Promise<PlanResult> {
-  if (dist([i.origin.lat, i.origin.lng], [i.destination.lat, i.destination.lng]) < 15) throw new ApiError('NO_ROUTE', 'Origin and destination are the same place');
-  try {
-    const pg = await graphFor([[i.origin.lat, i.origin.lng], [i.destination.lat, i.destination.lng]]);
+  const pts: Pt[] = [[i.origin.lat, i.origin.lng], [i.destination.lat, i.destination.lng]];
+  if (dist(pts[0], pts[1]) < 15) throw new ApiError('NO_ROUTE', 'Origin and destination are the same place');
+  const withCommunity = async (pg: Prepared) => {
     const [reports, ratings] = await Promise.all([community.reports().catch(() => []), community.ratings().catch(() => [])]);
     applyCommunity(pg, reports, ratings);
     lastPg = pg;
     return planOnGraph(pg, i);
+  };
+  // Fast path: the bundled ITB graph, no network calls except community reports.
+  if (await inStaticArea(pts)) return withCommunity((await loadStatic())!);
+  if (dist(pts[0], pts[1]) > LIVE_MAX_SPAN_M) throw new ApiError('OUT_OF_AREA', 'Too far for a walking route');
+  // Outside ITB: build a live graph from Overpass and, at the same time, ask Valhalla as a backup,
+  // so a slow or busy Overpass never makes the user wait for two timeouts in a row.
+  const backup = fallbackRoutes(i);
+  backup.catch(() => undefined);
+  try {
+    return await withCommunity(await graphFor(pts));
   } catch (e) {
     if (!canFallback(e)) throw e;
-    const span = dist([i.origin.lat, i.origin.lng], [i.destination.lat, i.destination.lng]);
-    if (span > LIVE_MAX_SPAN_M) throw e;
-    return fallbackRoutes(i);
+    return backup;
   }
 }
 
 export async function getActivityHeatmap(departure_at: Date, community?: Community): Promise<HeatPoint[]> {
-  const pg = lastPg ?? (await loadStatic()) ?? (await liveGraph(ITB_BOX).catch(() => null));
+  const pg = lastPg ?? (await loadStatic());
   if (!pg) return [];
   if (community) applyCommunity(pg, await community.reports().catch(() => []), await community.ratings().catch(() => []));
   return activityHeatmap(pg, departure_at);

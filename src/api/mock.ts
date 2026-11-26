@@ -9,7 +9,9 @@ import {
 
 const GRAPH_VERSION = '2026-11-25-1';
 const BBOX: [number, number, number, number] = [-6.9, 107.603, -6.878, 107.622];
-const wait = (ms = 300) => new Promise((r) => setTimeout(r, ms));
+// Artificial latency only when asked for (?mockDelay): in the real app these calls are local and instant.
+const MOCK_DELAY = typeof location !== 'undefined' && new URLSearchParams(location.search).has('mockDelay');
+const wait = (ms = 300) => new Promise((r) => setTimeout(r, MOCK_DELAY ? ms : 0));
 const uid = () => Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 10);
 
 function maybeFail() {
