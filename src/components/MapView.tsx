@@ -31,9 +31,11 @@ export function HeatLayer({ points }: { points: HeatPoint[] }) {
   return null;
 }
 
-export function FitBounds({ points }: { points: [number, number][] }) {
+/** Fit the map to points. `top`/`bottom` add extra padding for overlays (cards, bottom sheets). */
+export function FitBounds({ points, top = 40, bottom = 40 }: { points: [number, number][]; top?: number; bottom?: number }) {
   const map = useMap();
-  useEffect(() => { if (points.length > 1) map.fitBounds(L.latLngBounds(points), { padding: [40, 40] }); }, [map, points]);
+  const key = points.length ? `${points.length}:${points[0].join(',')}:${points[points.length - 1].join(',')}:${top}:${bottom}` : '';
+  useEffect(() => { if (points.length > 1) map.fitBounds(L.latLngBounds(points), { paddingTopLeft: [40, top], paddingBottomRight: [40, bottom] }); }, [map, key]); // eslint-disable-line react-hooks/exhaustive-deps
   return null;
 }
 

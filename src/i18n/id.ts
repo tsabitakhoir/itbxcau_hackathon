@@ -81,7 +81,7 @@ const id: Dict = {
   "c02.pickDestination": "Cari atau pilih tempat di bawah",
   "c02.swap": "Tukar awal dan tujuan",
   "c02.departure": "Waktu berangkat",
-  "c02.interval": "Per 15 menit",
+  "c02.interval": "Geser untuk pilih jam bebas",
   "c02.now": "Sekarang",
   "c02.scoreBasis": "Skor keamanan berdasarkan keberangkatan {time} hari ini.",
   "c02.places": "Favorit",
@@ -292,5 +292,11 @@ const id: Dict = {
   "c07.examples": "Contoh",
   "c07.previewLate": "10 menit lewat perkiraan tiba · Coba hubungi",
   "s06.voiceSub": "Membacakan setiap belokan untuk pengguna tunanetra atau low vision.",
+  "sheet.expand": "Tampilkan detail",
+  "sheet.collapse": "Sembunyikan detail untuk lihat peta",
+  "c02.custom": "Atur jam",
+  "c02.hour": "Jam",
+  "c02.minute": "Menit",
+  "c02.scoreBasisTomorrow": "Skor keamanan untuk berangkat besok pukul {time}.",
 };
 export default id;

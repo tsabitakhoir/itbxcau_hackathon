@@ -10,6 +10,7 @@ import { ErrorBox, SimChip, Toast, TopBar, errKey } from '../components/ui';
 import { fmtTime, useGeolocation } from '../components/geo';
 import { speak, stopSpeaking } from '../components/voice';
 import { useStore } from '../state/store';
+import { Sheet } from '../components/Sheet';
 import { useT } from '../i18n';
 import { Marker, Polyline, Tooltip } from 'react-leaflet';
 import { meIcon } from '../components/ReportMarkers';
@@ -34,6 +35,7 @@ export default function WalkPage() {
   const queue = useRef<(LatLng & { at: number })[]>([]);
   const [now, setNow] = useState(() => Date.now());
   const [follow, setFollow] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const [contacts, setContacts] = useState<EmergencyContact[]>([]);
   useEffect(() => { listContacts().then(setContacts).catch(() => undefined); }, []);
 
@@ -113,7 +115,7 @@ export default function WalkPage() {
             {passed.length > 1 && <Polyline positions={passed} pathOptions={{ color: token('--color-route-fast', 0.8), weight: 6 }} />}
             <Polyline positions={g} pathOptions={{ color: '#fff', weight: 11 }} />
             <Polyline positions={g} pathOptions={{ color: token(trip.chosen === 'safest' ? '--color-route-safe' : '--color-route-fast'), weight: 6 }} />
-            <FitBounds points={g} />
+            <FitBounds points={g} top={170} bottom={collapsed ? 110 : 360} />
             {pos && <Marker position={[pos.lat, pos.lng]} icon={meIcon}><Tooltip permanent direction="right" offset={[22, 0]} className="route-label">{t('c05.you')}</Tooltip></Marker>}
             <FollowPos pos={follow ? pos : null} />
           </MapView>
@@ -132,19 +134,23 @@ export default function WalkPage() {
             <Icon name="share" size={17} className="text-safe-line" />
           </button>
         </div>
-        <button onClick={() => setFollow((v) => !v)} aria-pressed={follow} aria-label={t('c01.myLocation')} className={`absolute bottom-10 right-6 z-[500] grid h-12 w-12 place-items-center rounded-full shadow-float ${follow ? 'bg-primary text-on-primary' : 'bg-surface'}`}><Icon name="locate" /></button>
-      </div>
-      <div className="sheet relative z-[600] -mt-5 px-6 pb-[max(2.1rem,env(safe-area-inset-bottom))] pt-3">
-        <div className="sheet-handle" />
-        <div className="mt-6 flex items-baseline gap-5"><p className="text-[36px] font-bold leading-none text-text">{t('common.min', { n: remaining })}</p><p className="text-sm text-muted">{t('c05.left', { m: leftM })}</p></div>
-        <p className="mt-4 text-base font-medium text-text">{t('c05.eta', { time: fmtTime(trip.eta, lang) })}</p>
-        <button onClick={() => nav(`/sos?trip=${trip.id}`)} className="mt-5 flex h-14 w-full items-center gap-4 rounded-[16px] bg-danger-soft px-4 text-left active:scale-[.99]" aria-label="SOS">
-          <span className="text-xl font-bold text-danger-text">SOS</span>
-          <span className="text-[13px] text-danger-text">{t('c05.emergency')}</span>
-          <span className="ml-auto text-[11px] text-danger-text">{t('c05.sosHint')}</span>
-        </button>
-        <button className="btn-primary mt-5 w-full" onClick={() => end('arrived')}>{t('c05.arrived')}</button>
-        <button className="mt-1 flex min-h-9 w-full items-center justify-center text-xs text-muted" onClick={() => end('cancelled')}>{t('c05.cancel')}</button>
+        <Sheet peek={92} onCollapsedChange={setCollapsed}
+          above={<div className="flex items-end justify-end gap-3 px-6 pb-4">
+            {collapsed && <button aria-label="SOS" onClick={() => nav(`/sos?trip=${trip.id}`)} className="grid h-14 w-14 place-items-center rounded-full bg-danger text-sm font-bold text-on-primary shadow-float">SOS</button>}
+            <button onClick={() => setFollow((v) => !v)} aria-pressed={follow} aria-label={t('c01.myLocation')} className={`grid h-12 w-12 place-items-center rounded-full shadow-float ${follow ? 'bg-primary text-on-primary' : 'bg-surface'}`}><Icon name="locate" /></button>
+          </div>}>
+          <div className="px-6 pb-[max(2.1rem,env(safe-area-inset-bottom))]">
+            <div className="mt-2 flex items-baseline gap-5"><p className="text-[36px] font-bold leading-none text-text">{t('common.min', { n: remaining })}</p><p className="text-sm text-muted">{t('c05.left', { m: leftM })}</p></div>
+            <p className="mt-4 text-base font-medium text-text">{t('c05.eta', { time: fmtTime(trip.eta, lang) })}</p>
+            <button onClick={() => nav(`/sos?trip=${trip.id}`)} className="mt-5 flex h-14 w-full items-center gap-4 rounded-[16px] bg-danger-soft px-4 text-left active:scale-[.99]" aria-label="SOS">
+              <span className="text-xl font-bold text-danger-text">SOS</span>
+              <span className="text-[13px] text-danger-text">{t('c05.emergency')}</span>
+              <span className="ml-auto text-[11px] text-danger-text">{t('c05.sosHint')}</span>
+            </button>
+            <button className="btn-primary mt-5 w-full" onClick={() => end('arrived')}>{t('c05.arrived')}</button>
+            <button className="mt-1 flex min-h-9 w-full items-center justify-center text-xs text-muted" onClick={() => end('cancelled')}>{t('c05.cancel')}</button>
+          </div>
+        </Sheet>
       </div>
       {toast && <Toast>{toast}</Toast>}
     </div>

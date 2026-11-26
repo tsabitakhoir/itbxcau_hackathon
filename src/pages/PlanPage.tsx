@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { listPlaces, planRoutes, searchPlaces } from '../api';
 import type { Place } from '../core/types';
 import { Icon } from '../components/Icon';
+import { TimeWheel } from '../components/TimeWheel';
 import { ErrorBox, Skeleton, TopBar, errKey } from '../components/ui';
 import { ITB_GATE, fmtTime, useGeolocation } from '../components/geo';
 import { useT } from '../i18n';
@@ -29,7 +30,11 @@ export default function PlanPage() {
   const [searching, setSearching] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const slots = useMemo(() => nextSlots(), []);
+  const slots = useMemo(() => nextSlots(2), []);
+  // Custom time from the wheel: today, or tomorrow if that time has already passed.
+  const [custom, setCustom] = useState<{ h: number; m: number } | null>(null);
+  const customDate = (h: number, m: number) => { const d = new Date(); d.setHours(h, m, 0, 0); if (d.getTime() < Date.now() - 60e3) d.setDate(d.getDate() + 1); return d; };
+  const openCustom = () => { if (custom) return; const d = dep === 'now' ? new Date() : new Date(dep); setCustom({ h: d.getHours(), m: d.getMinutes() }); };
   useEffect(() => { listPlaces().then(setPlaces).catch(() => setPlaces([])); }, []);
 
   const name = (p: Place) => (lang === 'ko' ? p.name_ko : lang === 'id' ? p.name_id : p.name_en ?? p.name_id);
@@ -38,7 +43,7 @@ export default function PlanPage() {
     const p = [...(places ?? []), ...searchResults].find((x) => x.id === k)!; return { lat: p.lat, lng: p.lng, label: p.display_name ?? name(p) };
   };
   const label = (k: Pick | null) => (k == null ? t('c02.pickDestination') : k === 'me' ? ep(k).label : [...(places ?? []), ...searchResults].some((p) => p.id === k) ? ep(k).label : '…');
-  const depDate = dep === 'now' ? new Date() : new Date(dep);
+  const depDate = custom ? customDate(custom.h, custom.m) : dep === 'now' ? new Date() : new Date(dep);
 
   async function compare() {
     if (to == null || (!places && !searchResults.length)) return;
@@ -93,11 +98,16 @@ export default function PlanPage() {
         </div>
         <div className="mt-3 grid grid-cols-4 gap-2.5">
           {[{ v: 'now', l: t('c02.now') }, ...slots.map((s) => ({ v: s.toISOString(), l: fmtTime(s, lang) }))].map((o) => (
-            <button key={o.v} onClick={() => setDep(o.v)} aria-pressed={dep === o.v}
-              className={`h-11 rounded-[14px] text-sm ${dep === o.v ? 'bg-primary-soft-2 font-bold text-primary' : 'bg-surface-2 font-medium text-muted'}`}>{o.l}</button>
+            <button key={o.v} onClick={() => { setDep(o.v); setCustom(null); }} aria-pressed={dep === o.v && !custom}
+              className={`h-11 rounded-[14px] text-sm ${dep === o.v && !custom ? 'bg-primary-soft-2 font-bold text-primary' : 'bg-surface-2 font-medium text-muted'}`}>{o.l}</button>
           ))}
+          <button onClick={openCustom} aria-pressed={!!custom} aria-expanded={!!custom}
+            className={`flex h-11 items-center justify-center gap-1 rounded-[14px] text-sm ${custom ? 'bg-primary-soft-2 font-bold text-primary' : 'bg-surface-2 font-medium text-muted'}`}>
+            <Icon name="clock" size={15} />{custom ? `${String(custom.h).padStart(2, '0')}:${String(custom.m).padStart(2, '0')}` : t('c02.custom')}
+          </button>
         </div>
-        <p className="mt-3.5 text-xs text-muted">{t('c02.scoreBasis', { time: fmtTime(depDate, lang) })}</p>
+        {custom && <div className="mt-3"><TimeWheel hour={custom.h} minute={custom.m} onHour={(h) => setCustom((c) => ({ m: 0, ...c, h }))} onMinute={(m) => setCustom((c) => ({ h: 0, ...c, m }))} labels={{ hour: t('c02.hour'), minute: t('c02.minute') }} /></div>}
+        <p className="mt-3.5 text-xs text-muted">{t(depDate.toDateString() === new Date().toDateString() ? 'c02.scoreBasis' : 'c02.scoreBasisTomorrow', { time: fmtTime(depDate, lang) })}</p>
 
         <div className="mt-7 flex items-baseline justify-between">
           <h3 className="text-lg font-bold text-text-3">{t(searched ? 'c02.searchResults' : 'c02.places')}</h3><span className="text-xs text-muted">{t('c02.placeCount', { n: searched ? searchResults.length : places?.length ?? 0 })}</span>

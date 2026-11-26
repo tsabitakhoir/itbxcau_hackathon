@@ -81,7 +81,7 @@ const ko: Dict = {
   "c02.pickDestination": "아래에서 장소를 검색하거나 선택하세요",
   "c02.swap": "출발지와 도착지 바꾸기",
   "c02.departure": "출발 시간",
-  "c02.interval": "15분 간격",
+  "c02.interval": "스크롤해서 시간을 골라요",
   "c02.now": "지금",
   "c02.scoreBasis": "오늘 {time} 출발 기준 안전 점수예요.",
   "c02.places": "즐겨찾기",
@@ -292,5 +292,11 @@ const ko: Dict = {
   "c07.examples": "예시",
   "c07.previewLate": "도착 예정 10분 지남 · 연락해 보세요",
   "s06.voiceSub": "시각장애인·저시력 사용자를 위해 회전 안내를 읽어 줘요.",
+  "sheet.expand": "자세히 보기",
+  "sheet.collapse": "지도를 크게 보기",
+  "c02.custom": "시간 설정",
+  "c02.hour": "시",
+  "c02.minute": "분",
+  "c02.scoreBasisTomorrow": "내일 {time} 출발 기준 안전 점수예요.",
 };
 export default ko;

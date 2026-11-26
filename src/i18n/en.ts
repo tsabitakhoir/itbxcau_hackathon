@@ -80,7 +80,7 @@ const en = {
   "c02.pickDestination": "Search or select a place below",
   "c02.swap": "Swap start and destination",
   "c02.departure": "Departure time",
-  "c02.interval": "15-min intervals",
+  "c02.interval": "Scroll to pick any time",
   "c02.now": "Now",
   "c02.scoreBasis": "Safety score based on today's {time} departure.",
   "c02.places": "Favorites",
@@ -291,6 +291,12 @@ const en = {
   "c07.examples": "Examples",
   "c07.previewLate": "10 minutes past ETA · Please get in touch",
   "s06.voiceSub": "Reads each turn aloud for blind or low-vision users.",
+  "sheet.expand": "Show details",
+  "sheet.collapse": "Hide details to see the map",
+  "c02.custom": "Set time",
+  "c02.hour": "Hour",
+  "c02.minute": "Minute",
+  "c02.scoreBasisTomorrow": "Safety score based on tomorrow's {time} departure.",
 };
 export default en;
 export type Dict = Record<keyof typeof en, string>;
