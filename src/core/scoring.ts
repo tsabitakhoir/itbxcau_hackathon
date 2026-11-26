@@ -43,10 +43,21 @@ export function prepareGraph(graph: Graph): Prepared {
     adj.get(s.to)!.push({ seg: s, to: s.from });
   }
   const near = new Map<number, GraphPoi[]>();
-  for (const s of graph.segments) near.set(s.id, []);
+  // segment bounding boxes, padded by the POI radius: a cheap test before the exact point-to-line distance
+  const padLat = POI_RADIUS_M / 111_320;
+  const box = new Map<number, [number, number, number, number]>();
+  for (const s of graph.segments) {
+    near.set(s.id, []);
+    let a = Infinity, b = Infinity, c = -Infinity, d = -Infinity;
+    for (const [lat, lng] of s.geometry) { if (lat < a) a = lat; if (lat > c) c = lat; if (lng < b) b = lng; if (lng > d) d = lng; }
+    const padLng = padLat / Math.cos((a * Math.PI) / 180);
+    box.set(s.id, [a - padLat, b - padLng, c + padLat, d + padLng]);
+  }
   for (const p of graph.pois) {
     const pt: Pt = [p.lat, p.lng];
     for (const s of segIndex.query(pt, POI_RADIUS_M)) {
+      const bb = box.get(s.id)!;
+      if (p.lat < bb[0] || p.lat > bb[2] || p.lng < bb[1] || p.lng > bb[3]) continue;
       if (pointToPolyline(pt, s.geometry).d <= POI_RADIUS_M) near.get(s.id)!.push(p);
     }
   }

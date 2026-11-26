@@ -90,14 +90,16 @@ export const inBbox = (p: Pt, b: [number, number, number, number]) => p[0] >= b[
 
 /** Simple uniform grid for fast "what is near this point" lookups. */
 export class GridIndex<T> {
-  private cells = new Map<string, T[]>();
+  private cells = new Map<number, T[]>();
   private readonly cellDeg: number;
   constructor(cellM = 100) { this.cellDeg = cellM / 111_320; }
-  private key(lat: number, lng: number) { return `${Math.floor(lat / this.cellDeg)}:${Math.floor(lng / this.cellDeg)}`; }
+  // numeric cell key (i, j fit easily: |lat|/cell < 1e5 for cells >= 1 m)
+  private key(lat: number, lng: number) { return this.k(Math.floor(lat / this.cellDeg), Math.floor(lng / this.cellDeg)); }
+  private k(i: number, j: number) { return (i + 2_000_000) * 4_000_000 + (j + 2_000_000); }
   insert(p: Pt, item: T) { const k = this.key(p[0], p[1]); const c = this.cells.get(k); if (c) c.push(item); else this.cells.set(k, [item]); }
   /** Insert an item for every cell its polyline crosses (approximate: samples every half cell). */
   insertLine(g: Pt[], item: T) {
-    const seen = new Set<string>();
+    const seen = new Set<number>();
     for (const p of sampleAlong(g, this.cellDeg * 111_320 * 0.5).concat([g[g.length - 1]])) {
       const k = this.key(p[0], p[1]);
       if (seen.has(k)) continue;
@@ -111,7 +113,7 @@ export class GridIndex<T> {
     const ci = Math.floor(p[0] / this.cellDeg), cj = Math.floor(p[1] / this.cellDeg);
     const out = new Set<T>();
     for (let i = ci - r; i <= ci + r; i++) for (let j = cj - r; j <= cj + r; j++) {
-      const c = this.cells.get(`${i}:${j}`);
+      const c = this.cells.get(this.k(i, j));
       if (c) for (const x of c) out.add(x);
     }
     return [...out];

@@ -103,7 +103,7 @@ function poiHours(t: Record<string, string>, type: PoiType): string | null {
   return null;
 }
 
-const round6 = (x: number) => Math.round(x * 1e6) / 1e6;
+const round6 = (x: number) => Math.round(x * 1e5) / 1e5; // ~1 m: plenty for walking, keeps the JSON small
 
 /** The 8 demo destinations around ITB (contract seed plan). */
 export const ITB_PLACES: Place[] = [
@@ -151,7 +151,6 @@ export function buildGraph(elements: OsmElement[], opts: { version: string; city
       if (len > 0.5 && ids[start] !== ids[i]) {
         const s: GraphSegment = { id: 0, from: ids[start], to: ids[i], name, road_type: rt, lit, length_m: Math.round(len * 10) / 10, geometry: g };
         if (access) s.access = access;
-        if (lit === 'unknown') s.simulated_attrs = ['lit'];
         segs.push(s);
       }
       start = i;
