@@ -26,6 +26,7 @@ export default function RoutesPage() {
   }
   const accessLine = (r: RouteOption) => !r.access ? null
     : r.access.steps > 0 ? <span className="text-danger-text">{t('c03.hasSteps', { n: r.access.steps })}</span>
+    : !r.access.wheelchair_ok ? <span className="text-caution">{t('c03.accessUnverified')}</span>
     : <span className="text-safe">{t('c03.stepFree')}</span>;
   const Card = ({ k, r }: { k: RouteKind; r: RouteOption }) => {
     const active = sel === k; const safe = k === 'safest';

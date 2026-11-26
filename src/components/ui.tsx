@@ -14,7 +14,7 @@ export const scoreTone = (s: number) => (s >= SCORE_BANDS.safe ? 'safe' : s >= S
 export const toneText = { safe: 'text-safe', caution: 'text-caution', danger: 'text-danger-text' } as const;
 // eslint-disable-next-line react-refresh/only-export-components
 export function errKey(e: unknown): TKey {
-  if (e instanceof ApiError && ['OUT_OF_AREA', 'NO_ROUTE', 'NOT_FOUND', 'OWN_REPORT', 'ALREADY_CONFIRMED', 'PHOTO_TOO_LARGE'].includes(e.code)) return `error.${e.code}` as TKey;
+  if (e instanceof ApiError && ['OUT_OF_AREA', 'NO_ROUTE', 'NOT_FOUND', 'OWN_REPORT', 'ALREADY_CONFIRMED', 'PHOTO_TOO_LARGE', 'NETWORK'].includes(e.code)) return `error.${e.code}` as TKey;
   return 'error.generic';
 }
 // eslint-disable-next-line react-refresh/only-export-components

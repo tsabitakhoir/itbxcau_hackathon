@@ -94,11 +94,13 @@ export default function RouteDetailPage() {
           <Row a={`${litPct(fast)}%`} label={t('c03.rowLit')} b={`${litPct(safe)}%`} />
           <Row a={openCount(fast)} label={t('c03.rowOpen')} b={openCount(safe)} />
           <Row a={cond(fast)} label={t('c03.rowNight')} b={cond(safe)} />
-          {wheelchair && fast.access && safe.access && <>
-            <Row a={fast.access.steps} label={t('c04.rowSteps')} b={safe.access.steps} />
-            <Row a={fast.access.lowered_kerbs} label={t('c04.rowKerbs')} b={safe.access.lowered_kerbs} />
-            <Row a={fast.access.accessible_toilets} label={t('c04.rowToilets')} b={safe.access.accessible_toilets} />
-          </>}
+          {wheelchair && fast.access && safe.access && (fast.access.accessibility_verified === false || safe.access.accessibility_verified === false)
+            ? <p className="text-xs text-caution">{t('c03.accessUnverified')}</p>
+            : wheelchair && fast.access && safe.access && <>
+              <Row a={fast.access.steps} label={t('c04.rowSteps')} b={safe.access.steps} />
+              <Row a={fast.access.lowered_kerbs} label={t('c04.rowKerbs')} b={safe.access.lowered_kerbs} />
+              <Row a={fast.access.accessible_toilets} label={t('c04.rowToilets')} b={safe.access.accessible_toilets} />
+            </>}
         </div>
 
         {areas.length > 0 && <>

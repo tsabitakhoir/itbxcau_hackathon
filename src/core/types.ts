@@ -34,7 +34,7 @@ export type RouteOption = {
   watch_areas?: WatchArea[];      // C-04 "Areas to watch out for"
   score_later?: { at: string; score: number } | null; // score at departure + 1 h (C-04)
 };
-export type AccessInfo = { steps: number; steep_m: number; narrow_m: number; lowered_kerbs: number; accessible_toilets: number; wheelchair_ok: boolean; rough_m?: number }; // rough_m: permukaan buruk (kerikil, tanah)
+export type AccessInfo = { steps: number; steep_m: number; narrow_m: number; lowered_kerbs: number; accessible_toilets: number; wheelchair_ok: boolean; accessibility_verified?: boolean; rough_m?: number }; // rough_m: permukaan buruk (kerikil, tanah)
 export type Maneuver = 'depart' | 'straight' | 'slight_left' | 'left' | 'sharp_left' | 'slight_right' | 'right' | 'sharp_right' | 'arrive';
 export type NavStep = { maneuver: Maneuver; name: string | null; distance_m: number; at: [number, number] };
 export type WatchArea = { segment_id: number; name: string | null; kind: 'dark' | 'quiet' | 'report' | 'steps' | 'steep' | 'narrow'; meters: number; score: number; at: [number, number] };
