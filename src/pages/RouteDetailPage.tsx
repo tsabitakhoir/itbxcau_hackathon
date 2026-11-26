@@ -5,10 +5,10 @@ import { Marker, Polyline } from 'react-leaflet';
 import { Navigate, useParams } from 'react-router-dom';
 import { planRoutes } from '../api';
 import { SCORE_BANDS, SCORE_WEIGHTS } from '../core/config';
-import type { Factors, RouteKind, RouteOption, WatchArea } from '../core/types';
+import type { Factors, Reason, RouteKind, RouteOption, WatchArea } from '../core/types';
 import { Icon } from '../components/Icon';
 import { FitBounds, MapView, token } from '../components/MapView';
-import { pts, TopBar, scoreTone, ReasonList, reasonText, sortReasons } from '../components/ui';
+import { pts, TopBar, scoreTone, ReasonList } from '../components/ui';
 import { fmtTime } from '../components/geo';
 import { useT } from '../i18n';
 import { useStore } from '../state/store';
@@ -18,6 +18,24 @@ const FACTORS: FactorKey[] = ['lighting', 'facilities', 'crowd', 'reports'];
 const f100 = (v: number) => Math.round(v * 100);
 const litPct = (r: RouteOption) => r.reasons.find((x) => x.code === 'LIT_PCT')?.pct ?? f100(r.factors.lighting);
 const openCount = (r: RouteOption) => r.reasons.find((x) => x.code === 'OPEN_PLACES')?.count ?? 0;
+
+function friendlyReason(t: ReturnType<typeof useT>['t'], r: Reason) {
+  const name = r.name?.trim() || t('summary.unnamedArea');
+  switch (r.code) {
+    case 'OPEN_PLACES': return t(r.count === 0 ? 'summary.places.none' : r.count === 1 ? 'summary.places.one' : (r.count ?? 0) >= 4 ? 'summary.places.many' : 'summary.places.few');
+    case 'POLICE_NEAR': return t('summary.police', { count: r.count ?? 1 });
+    case 'LIT_PCT': return t((r.pct ?? 0) >= 80 ? 'summary.lighting.most' : (r.pct ?? 0) >= 50 ? 'summary.lighting.some' : 'summary.lighting.limited');
+    case 'BUSY_PCT': return t('summary.activity');
+    case 'CONFIRMED_REPORTS': return t((r.count ?? 0) === 0 ? 'summary.reports.none' : 'summary.reports.some', { count: r.count ?? 0 });
+    case 'DARK_STRETCH': return t('summary.dark', { name });
+    case 'QUIET_STRETCH': return t('summary.quiet', { name });
+    case 'DATA_LIMITED': return t('summary.dataLimited');
+    case 'STEPS': return t('summary.steps', { count: r.count ?? 0 });
+    case 'STEEP': return t('summary.steep', { meters: r.meters ?? 0 });
+    case 'ACCESSIBLE_TOILET': return t('summary.toilets', { count: r.count ?? 0 });
+    case 'LOWERED_KERBS': return t('summary.ramps', { count: r.count ?? 0 });
+  }
+}
 
 /** Headline = the strongest factor of the route (or a warning if the score is low). */
 function headlineKey(r: RouteOption) {
@@ -44,8 +62,12 @@ export default function RouteDetailPage() {
   const fast = plan.fastest, safe = plan.safest;
   const f: Factors = r.factors;
   const reports = r.reasons.find((x) => x.code === 'CONFIRMED_REPORTS')?.count ?? 0;
-  // One readable paragraph out of the strongest reasons (good ones first), instead of a bare list.
-  const summary = sortReasons(r.reasons).filter((x) => x.count !== 0).slice(0, 4).map((x) => reasonText(t, x).replace(/\s*·\s*—/g, '').replace(/[.。]+$/, '')).join('. ') + '.';
+  // Lead with helpful positives, then mention the most useful cautions in plain language.
+  const positives = r.reasons.filter((x) => x.tone === 'good' && !(x.code === 'CONFIRMED_REPORTS' && x.count === 0));
+  const cautions = r.reasons.filter((x) => x.tone === 'warn' || x.tone === 'bad');
+  const otherReasons = r.reasons.filter((x) => x.tone === 'info' || (x.code === 'CONFIRMED_REPORTS' && x.count === 0));
+  const summaryReasons = [...positives.slice(0, 2), ...cautions.slice(0, 2), ...positives.slice(2), ...otherReasons].slice(0, 4);
+  const summary = summaryReasons.map((x) => friendlyReason(t, x)).join(' ');
   const wheelchair = (plan.mode ?? prefs.mode) === 'wheelchair';
   const cond = (x: RouteOption) => { const tone = scoreTone(x.score); return <span className={tone === 'safe' ? '' : tone === 'caution' ? 'text-caution' : 'text-danger-text'}>{t(`band.${tone}`)}</span>; };
 
