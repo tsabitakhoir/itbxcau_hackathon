@@ -6,6 +6,7 @@ import type { RouteKind, RouteOption } from '../core/types';
 import { Icon } from '../components/Icon';
 import { FitBounds, MapView } from '../components/MapView';
 import { RouteLines } from '../components/RouteLines';
+import { Sheet } from '../components/Sheet';
 import { ErrorBox, SimChip, TopBar, errKey, km, minutes, pts } from '../components/ui';
 import { fmtTime } from '../components/geo';
 import { useT } from '../i18n';
@@ -14,6 +15,7 @@ import { useStore } from '../state/store';
 export default function RoutesPage() {
   const { t, lang } = useT(); const nav = useNavigate(); const { plan, origin, destination, departure, prefs } = useStore();
   const [sel, setSel] = useState<RouteKind>('safest');
+  const [collapsed, setCollapsed] = useState(false);
   const [busy, setBusy] = useState(false); const [err, setErr] = useState<string | null>(null);
   if (!plan || !origin || !destination) return <Navigate to="/plan" replace />;
   const { fastest: f, safest: s } = plan;
@@ -52,28 +54,31 @@ export default function RoutesPage() {
           <span className="ml-2 shrink-0 text-muted">{fmtTime(departure ?? new Date(), lang)}</span>
         </div>
       </div>
-      <div className="relative h-[280px] shrink-0">
-        <MapView>
-          <RouteLines plan={plan} selected={sel} onSelect={setSel} labels />
-          <FitBounds points={[...f.geometry, ...s.geometry]} />
-        </MapView>
-      </div>
-      <div className="sheet relative z-[600] -mt-3 flex-1 overflow-y-auto px-6 pb-36 pt-3">
-        <div className="sheet-handle" />
-        <h2 className="page-heading mt-6 text-text">{headline}</h2>
-        {plan.calculation_basis === 'forecast' && <p className="mt-2 text-xs leading-5 text-muted">{t('c03.forecastNote')}</p>}
-        {wheelchair && <p className="mt-1 flex items-center gap-1.5 text-xs font-medium text-primary"><Icon name="wheelchair" size={15} />{t('c03.wheelchairOn')}</p>}
-        <div className="mt-4 grid grid-cols-2 gap-2.5">
-          <Card k="fastest" r={f} />
-          <Card k="safest" r={s} />
+      <div className="relative flex-1 overflow-hidden">
+        <div className="absolute inset-0">
+          <MapView>
+            <RouteLines plan={plan} selected={sel} onSelect={setSel} labels />
+            <FitBounds points={[...f.geometry, ...s.geometry]} bottom={collapsed ? 200 : 520} />
+          </MapView>
         </div>
-        <button onClick={() => nav(`/routes/${sel}`)} className="mt-[22px] flex h-[60px] w-full items-center justify-between rounded-[18px] bg-surface-2 px-4 text-left">
-          <span className="text-[15px] font-medium text-text-3">{t('c03.why')}</span>
-          <span className="text-xs font-medium text-primary">{t('c03.details')}  ›</span>
-        </button>
-        {(f.data_limited || s.data_limited) && <p className="mt-3 text-[11px] text-muted">{t('c03.dataLimited')}</p>}
-        <p className="mt-4 text-center text-[10px] text-muted">{t('common.disclaimer')}</p>
-        {err && <div className="mt-3"><ErrorBox message={err} /></div>}
+        <Sheet peek={170} onCollapsedChange={setCollapsed} className="flex max-h-[calc(100%-16px)] flex-col">
+          <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-32">
+            <h2 className="page-heading mt-2 text-text">{headline}</h2>
+            {plan.calculation_basis === 'forecast' && <p className="mt-2 text-xs leading-5 text-muted">{t('c03.forecastNote')}</p>}
+            {wheelchair && <p className="mt-1 flex items-center gap-1.5 text-xs font-medium text-primary"><Icon name="wheelchair" size={15} />{t('c03.wheelchairOn')}</p>}
+            <div className="mt-4 grid grid-cols-2 gap-2.5">
+              <Card k="fastest" r={f} />
+              <Card k="safest" r={s} />
+            </div>
+            <button onClick={() => nav(`/routes/${sel}`)} className="mt-[22px] flex h-[60px] w-full items-center justify-between rounded-[18px] bg-surface-2 px-4 text-left">
+              <span className="text-[15px] font-medium text-text-3">{t('c03.why')}</span>
+              <span className="text-xs font-medium text-primary">{t('c03.details')}  ›</span>
+            </button>
+            {(f.data_limited || s.data_limited) && <p className="mt-3 text-[11px] text-muted">{t('c03.dataLimited')}</p>}
+            <p className="mt-4 text-center text-[10px] text-muted">{t('common.disclaimer')}</p>
+            {err && <div className="mt-3"><ErrorBox message={err} /></div>}
+          </div>
+        </Sheet>
       </div>
       <div className="absolute inset-x-0 bottom-0 z-[700] bg-surface px-6 pb-[max(2.1rem,env(safe-area-inset-bottom))] pt-3">
         <button className="btn-primary w-full" disabled={busy} onClick={start}>

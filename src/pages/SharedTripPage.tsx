@@ -8,12 +8,14 @@ import type { SharedTrip } from '../core/types';
 import { Icon } from '../components/Icon';
 import { FitBounds, MapView, token } from '../components/MapView';
 import { meIcon } from '../components/ReportMarkers';
+import { Sheet } from '../components/Sheet';
 import { ErrorBox, SimChip, errKey } from '../components/ui';
 import { fmtTime } from '../components/geo';
 import { useT } from '../i18n';
 
 export default function SharedTripPage() {
   const { token: tk = '' } = useParams(); const { t, lang } = useT();
+  const [collapsed, setCollapsed] = useState(false);
   const [d, setD] = useState<SharedTrip | null>(null); const [err, setErr] = useState<string | null>(null);
   useEffect(() => {
     let alive = true;
@@ -49,7 +51,7 @@ export default function SharedTripPage() {
           <MapView>
             <Polyline positions={d.route_geometry} pathOptions={{ color: '#fff', weight: 11 }} />
             <Polyline positions={d.route_geometry} pathOptions={{ color: token('--color-route-safe'), weight: 6 }} />
-            <FitBounds points={d.route_geometry} />
+            <FitBounds points={d.route_geometry} top={110} bottom={collapsed ? 140 : 440} />
             {d.last_location && <Marker position={[d.last_location.lat, d.last_location.lng]} icon={meIcon}>
               <Tooltip permanent direction="right" offset={[22, 0]} className="route-label">{name} · {fmtTime(d.last_location.recorded_at, lang)}</Tooltip>
             </Marker>}
@@ -59,11 +61,10 @@ export default function SharedTripPage() {
           <p className="text-lg font-bold">{banner.title}</p>
           <p className="mt-1 text-[11px] opacity-80">{banner.sub}</p>
         </div>
-        <SimChip className="absolute bottom-8 left-6 z-[500]" />
-      </div>
-      <div className="sheet relative z-[600] -mt-5 px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-3">
-        <div className="sheet-handle" />
-        <div className="mt-5 flex items-start justify-between gap-3">
+        <Sheet peek={100} onCollapsedChange={setCollapsed} className="flex max-h-[calc(100%-16px)] flex-col"
+          above={<div className="px-6 pb-4"><SimChip /></div>}>
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+        <div className="mt-2 flex items-start justify-between gap-3">
           <div>
             <p className="text-2xl font-bold">{t('c07.eta', { time: fmtTime(d.eta, lang) })}</p>
             <p className="mt-1 text-[13px] text-muted">{t('c07.toPlace', { place: d.destination_label })}{d.status === 'active' && ` · ${t('c07.about', { n: minsLeft })}`}</p>
@@ -79,6 +80,8 @@ export default function SharedTripPage() {
           <div className="mt-2.5 flex items-center gap-4 rounded-[16px] bg-danger-soft px-4 py-3"><Icon name="phone" size={20} className="shrink-0 text-danger-text" /><div><p className="text-[13px] font-bold text-danger-text">{t('c07.sosTitle', { name })}</p><p className="text-[10px] text-danger-text">{t('c07.sosBody')}</p></div></div>
         </>}
         <p className="mt-5 flex items-center justify-center gap-2 text-[10px] text-muted"><Icon name="lock" size={14} />{t('c07.expires')}</p>
+        </div>
+        </Sheet>
       </div>
     </div>
   );

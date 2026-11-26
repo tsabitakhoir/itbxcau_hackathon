@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { I18nProvider } from './i18n';
+import { LongPressSpeak } from './components/LongPressSpeak';
 import { StoreProvider } from './state/store';
 import ArrivedPage from './pages/ArrivedPage';
 import ContactsPage from './pages/ContactsPage';
@@ -23,6 +24,7 @@ export default function App() {
     <I18nProvider>
       <StoreProvider>
         <BrowserRouter>
+          <LongPressSpeak />
           <Routes>
             <Route path="/" element={<SplashPage />} />
             <Route path="/onboarding" element={<OnboardingPage />} />

@@ -10,10 +10,13 @@ import { useT } from '../i18n';
 export default function ContactsPage() {
   const { t } = useT(); const nav = useNavigate(); const [sp] = useSearchParams(); const next = sp.get('next');
   const [list, setList] = useState<EmergencyContact[] | null>(null);
-  const [name, setName] = useState(''); const [phone, setPhone] = useState(''); const [channel, setChannel] = useState<EmergencyContact['channel']>('whatsapp');
+  const [name, setName] = useState(''); const [cc, setCc] = useState('+62'); const [phone, setPhone] = useState(''); const [channel, setChannel] = useState<EmergencyContact['channel']>('whatsapp');
   useEffect(() => { listContacts().then(setList).catch(() => setList([])); }, []);
-  const valid = name.trim() && /^\+\d{8,15}$/.test(phone.replace(/[\s-]/g, ''));
-  async function add() { if (!valid) return; const c = await addContact({ name: name.trim(), phone: phone.replace(/[\s-]/g, ''), channel }); setList((l) => [...(l ?? []), c]); setName(''); setPhone(''); }
+  // Local number without the leading trunk 0 (e.g. 0812… → 812…), joined to the chosen country code.
+  const local = phone.replace(/[\s-]/g, '').replace(/^0+/, '');
+  const full = cc + local;
+  const valid = name.trim() && /^\d{7,13}$/.test(local);
+  async function add() { if (!valid) return; const c = await addContact({ name: name.trim(), phone: full, channel }); setList((l) => [...(l ?? []), c]); setName(''); setPhone(''); }
   return (
     <div className="flex h-full flex-col">
       <TopBar title={t('s04.title')} />
@@ -30,7 +33,12 @@ export default function ContactsPage() {
         </ul>
         <div className="mt-6 space-y-3 rounded-card border border-line bg-surface p-4">
           <input className="input" placeholder={t('s04.name')} value={name} onChange={(e) => setName(e.target.value)} />
-          <input className="input" inputMode="tel" placeholder={t('s04.phone')} value={phone} onChange={(e) => setPhone(e.target.value)} />
+          <div className="flex gap-2">
+            <select aria-label={t('s04.country')} className="input w-[92px] shrink-0 px-3" value={cc} onChange={(e) => setCc(e.target.value)}>
+              <option value="+62">+62</option><option value="+82">+82</option>
+            </select>
+            <input className="input min-w-0 flex-1" inputMode="tel" placeholder={t('s04.phone')} value={phone} onChange={(e) => setPhone(e.target.value.replace(/[^\d\s-]/g, ''))} />
+          </div>
           <div className="grid grid-cols-3 gap-2">
             {(['whatsapp', 'kakao', 'sms'] as const).map((ch) => <button key={ch} onClick={() => setChannel(ch)} aria-pressed={channel === ch} className={`h-10 rounded-xl text-xs capitalize ${channel === ch ? 'bg-primary font-bold text-on-primary' : 'bg-surface-2 text-muted'}`}>{ch}</button>)}
           </div>
