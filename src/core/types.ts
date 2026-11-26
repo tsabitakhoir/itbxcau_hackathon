@@ -4,6 +4,8 @@ export type LatLng = { lat: number; lng: number };
 export type Lang = 'en' | 'id' | 'ko';
 export type Country = 'ID' | 'KR';
 export type RouteKind = 'fastest' | 'safest';
+export type DepartureMode = 'now' | 'scheduled';
+export type CalculationBasis = 'current' | 'forecast';
 /** Travel mode chosen on C-00. Wheelchair mode avoids steps and favours ramps/lowered kerbs. */
 export type TravelMode = 'walk' | 'wheelchair';
 /** All 0..1, higher = safer. facilities = places/help nearby, crowd = activity, reports = 1 - community_penalty. */
@@ -38,7 +40,7 @@ export type AccessInfo = { steps: number; steep_m: number; narrow_m: number; low
 export type Maneuver = 'depart' | 'straight' | 'slight_left' | 'left' | 'sharp_left' | 'slight_right' | 'right' | 'sharp_right' | 'arrive';
 export type NavStep = { maneuver: Maneuver; name: string | null; distance_m: number; at: [number, number] };
 export type WatchArea = { segment_id: number; name: string | null; kind: 'dark' | 'quiet' | 'report' | 'steps' | 'steep' | 'narrow'; meters: number; score: number; at: [number, number] };
-export type PlanResult = { fastest: RouteOption; safest: RouteOption; same_route: boolean; extra_minutes: number; departure_at: string; graph_version: string; simulated: boolean; mode?: TravelMode };
+export type PlanResult = { fastest: RouteOption; safest: RouteOption; same_route: boolean; extra_minutes: number; departure_at: string; calculation_basis: CalculationBasis; graph_version: string; simulated: boolean; mode?: TravelMode };
 export type HeatPoint = [number, number, number]; // [lat, lng, intensitas 0..1]
 export type Profile = { id: string; display_name: string; lang: Lang; country: Country; id_verified_mock: boolean; travel_mode?: TravelMode; voice_guidance?: boolean };
 export type EmergencyContact = { id: string; name: string; phone: string; channel: 'whatsapp' | 'kakao' | 'sms' };

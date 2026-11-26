@@ -140,7 +140,7 @@ export default function WalkPage() {
             <button onClick={() => setFollow((v) => !v)} aria-pressed={follow} aria-label={t('c01.myLocation')} className={`grid h-12 w-12 place-items-center rounded-full shadow-float ${follow ? 'bg-primary text-on-primary' : 'bg-surface'}`}><Icon name="locate" /></button>
           </div>}>
           <div className="px-6 pb-[max(2.1rem,env(safe-area-inset-bottom))]">
-            <div className="mt-2 flex items-baseline gap-5"><p className="text-[36px] font-bold leading-none text-text">{t('common.min', { n: remaining })}</p><p className="text-sm text-muted">{t('c05.left', { m: leftM })}</p></div>
+            <div className="mt-2 flex items-baseline gap-5"><p className="text-[32px] font-bold leading-none text-text">{t('common.min', { n: remaining })}</p><p className="text-sm text-muted">{t('c05.left', { m: leftM })}</p></div>
             <p className="mt-4 text-base font-medium text-text">{t('c05.eta', { time: fmtTime(trip.eta, lang) })}</p>
             <button onClick={() => nav(`/sos?trip=${trip.id}`)} className="mt-5 flex h-14 w-full items-center gap-4 rounded-[16px] bg-danger-soft px-4 text-left active:scale-[.99]" aria-label="SOS">
               <span className="text-xl font-bold text-danger-text">SOS</span>

@@ -71,7 +71,7 @@ function navSteps(g: [number, number][]): NavStep[] {
 }
 const mid = (g: [number, number][]): [number, number] => { const k = Math.floor(g.length / 2); return [(g[k - 1][0] + g[k][0]) / 2, (g[k - 1][1] + g[k][1]) / 2]; };
 
-function mockPlan(i: { origin: LatLng; destination: LatLng; departure_at: Date; mode?: TravelMode }, withLater: boolean): PlanResult {
+function mockPlan(i: { origin: LatLng; destination: LatLng; departure_at: Date; departure_mode?: 'now' | 'scheduled'; mode?: TravelMode }, withLater: boolean): PlanResult {
   const o = i.origin, d = i.destination; const mode = i.mode ?? 'walk'; const wc = mode === 'wheelchair';
   // fastest: zig-zag through the "alleys" (diagonal-ish); safest: along the main roads (L-shape via a wider corner)
   const fast: [number, number][] = [[o.lat, o.lng], [o.lat + (d.lat - o.lat) * 0.35, o.lng + (d.lng - o.lng) * 0.2], [o.lat + (d.lat - o.lat) * 0.6, o.lng + (d.lng - o.lng) * 0.65], [d.lat, d.lng]];
@@ -125,13 +125,13 @@ function mockPlan(i: { origin: LatLng; destination: LatLng; departure_at: Date; 
     fastest.score_later = { at: at.toISOString(), score: later.fastest.score };
     safest.score_later = { at: at.toISOString(), score: later.safest.score };
   }
-  return { fastest, safest, same_route: false, extra_minutes: Math.round((safest.duration_s - fastest.duration_s) / 60), departure_at: i.departure_at.toISOString(), graph_version: GRAPH_VERSION, simulated: true, mode };
+  return { fastest, safest, same_route: false, extra_minutes: Math.round((safest.duration_s - fastest.duration_s) / 60), departure_at: i.departure_at.toISOString(), calculation_basis: i.departure_mode === 'scheduled' || (i.departure_mode !== 'now' && i.departure_at.getTime() > Date.now() + 60_000) ? 'forecast' : 'current', graph_version: GRAPH_VERSION, simulated: true, mode };
 }
 
 /** score = 1 + 4 * Σ SCORE_WEIGHTS * factor (lighting 30, facilities 25, crowd 20, reports 25). */
 const scoreOf = (f: RouteOption['factors']) => Math.round((1 + 4 * (SCORE_WEIGHTS.lighting * f.lighting + SCORE_WEIGHTS.facilities * f.facilities + SCORE_WEIGHTS.crowd * f.crowd + SCORE_WEIGHTS.reports * f.reports)) * 10) / 10;
 
-export async function planRoutes(i: { origin: LatLng; destination: LatLng; departure_at: Date; mode?: TravelMode }): Promise<PlanResult> {
+export async function planRoutes(i: { origin: LatLng; destination: LatLng; departure_at: Date; departure_mode?: 'now' | 'scheduled'; mode?: TravelMode }): Promise<PlanResult> {
   await wait(600); maybeFail();
   if (!inBox(i.origin) || !inBox(i.destination)) throw new ApiError('OUT_OF_AREA', 'Outside simulated area');
   if (distM(i.origin, i.destination) < 30) throw new ApiError('NO_ROUTE', 'Origin and destination are the same');

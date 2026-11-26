@@ -51,13 +51,13 @@ export default function MapPage() {
 
       <div className="absolute inset-x-0 top-0 z-[500] bg-surface px-6 pb-3 pt-[max(3.5rem,env(safe-area-inset-top))]">
         <div className="flex items-start justify-between">
-          <p className="text-[22px] font-bold leading-[33px] text-text">{APP_NAME}</p>
+          <p className="text-xl font-bold leading-7 text-text">{APP_NAME}</p>
           <button onClick={() => nav('/mode?from=home')} className="-mr-1 -mt-1.5 min-h-11 rounded-xl px-3 text-left" aria-label={`${t('c01.travelSettings')}: ${t(`mode.${prefs.mode}`)}`}>
             <span className="block text-[10px] font-medium leading-5 text-muted">{t('c01.travelSettings')}</span>
             <span className="flex items-center gap-1 text-[11px] font-medium leading-[17px] text-text-2"><Icon name={prefs.mode === 'walk' ? 'walk' : 'wheelchair'} size={13} />{t(`mode.${prefs.mode}`)}</span>
           </button>
         </div>
-        <h1 className="mt-3 text-[25px] font-bold leading-[38px] text-text">{t('c01.heading')}</h1>
+        <h1 className="page-heading mt-3 text-text">{t('c01.heading')}</h1>
         <button onClick={() => nav('/plan')} className="mt-3 flex h-14 w-full items-center gap-3 rounded-[18px] bg-surface-2 px-[18px] text-left">
           <Icon name="search" size={20} className="text-muted" />
           <span className="text-[17px] font-medium text-muted">{t('c01.search')}</span>

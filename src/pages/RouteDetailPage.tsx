@@ -34,7 +34,7 @@ export default function RouteDetailPage() {
     if (!r0 || !origin || !destination || !kind) return;
     if (r0.score_later) { setLater({ at: new Date(r0.score_later.at), score: r0.score_later.score }); return; }
     const at = new Date(dep.getTime() + 3600e3);
-    planRoutes({ origin, destination, departure_at: at, mode: plan?.mode ?? prefs.mode }).then((p) => setLater({ at, score: p[kind].score })).catch(() => undefined);
+    planRoutes({ origin, destination, departure_at: at, departure_mode: 'scheduled', mode: plan?.mode ?? prefs.mode }).then((p) => setLater({ at, score: p[kind].score })).catch(() => undefined);
   }, [kind]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!plan || !r0 || (kind !== 'fastest' && kind !== 'safest')) return <Navigate to="/plan" replace />;
 
@@ -61,11 +61,11 @@ export default function RouteDetailPage() {
     <div className="flex h-full flex-col">
       <TopBar title={t('c04.title')} />
       <div className="flex-1 overflow-y-auto px-6 pb-10">
-        <h2 className="mt-4 text-[26px] font-bold leading-[39px] text-text">{t(headlineKey(r) as 'c04.hl.care')}</h2>
+        <h2 className="page-heading mt-4 text-text">{t(headlineKey(r) as 'c04.hl.care')}</h2>
         <section className="mt-5 flex items-center gap-6 rounded-[24px] bg-primary-soft px-5 py-4">
           <div className="shrink-0">
             <p className="text-[13px] text-text-2">{t('c04.safetyScore')}</p>
-            <p className="flex items-baseline gap-3"><span className="text-[48px] font-bold leading-[1.3] text-primary">{pts(r.score)}</span><span className="text-xs text-muted">/ 100</span></p>
+            <p className="flex items-baseline gap-3"><span className="display-number text-primary">{pts(r.score)}</span><span className="text-xs text-muted">/ 100</span></p>
           </div>
           <div className="min-w-0">
             <p className="text-base font-bold text-text">{t(`kind.${kind}`)}</p>

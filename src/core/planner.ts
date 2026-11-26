@@ -5,11 +5,11 @@ import { bearing, dist, pointToPolyline, turnAngle, type Pt } from './geo';
 import { dijkstra, legGeometry, legLength, snap, type CostFn, type Leg } from './routing';
 import { cityClock, cityOffsetMin, scorer, type Prepared, type SegmentScore } from './scoring';
 import {
-  ApiError, type AccessInfo, type Factors, type GraphSegment, type LatLng, type Maneuver, type NavStep, type PlanResult, type Reason,
+  ApiError, type AccessInfo, type CalculationBasis, type DepartureMode, type Factors, type GraphSegment, type LatLng, type Maneuver, type NavStep, type PlanResult, type Reason,
   type RouteKind, type RouteOption, type TravelMode, type WatchArea,
 } from './types';
 
-export type PlanInput = { origin: LatLng; destination: LatLng; departure_at: Date; mode?: TravelMode; now?: Date };
+export type PlanInput = { origin: LatLng; destination: LatLng; departure_at: Date; departure_mode?: DepartureMode; mode?: TravelMode; now?: Date };
 
 /** Wheelchair: why a segment is a problem (null = fine). */
 export function wheelchairIssue(s: GraphSegment): 'steps' | 'steep' | 'surface' | 'narrow' | 'tagged_no' | null {
@@ -188,11 +188,13 @@ export function planOnGraph(pg: Prepared, i: PlanInput): PlanResult {
   const mode: TravelMode = i.mode ?? 'walk';
   const now = i.now ?? new Date();
   const t = i.departure_at.getTime() < now.getTime() - 60_000 ? now : i.departure_at; // past departure -> now
+  const basis: CalculationBasis = i.departure_mode === 'now' ? 'current' : i.departure_mode === 'scheduled' ? 'forecast' : t.getTime() > now.getTime() + 60_000 ? 'forecast' : 'current';
+  const dataNow = basis === 'forecast' ? t : now;
   const o: Pt = [i.origin.lat, i.origin.lng], d: Pt = [i.destination.lat, i.destination.lng];
   const so = snap(pg, o), sd = snap(pg, d);
   if (!so || !sd) throw new ApiError('OUT_OF_AREA', 'Origin or destination is outside the mapped area');
   if (dist(o, d) < 15) throw new ApiError('NO_ROUTE', 'Origin and destination are the same place');
-  const score = scorer(pg, t, now);
+  const score = scorer(pg, t, dataNow);
 
   let strict = mode === 'wheelchair';
   let fastLegs = dijkstra(pg, so, sd, routeCost(mode, strict, null));
@@ -211,14 +213,14 @@ export function planOnGraph(pg: Prepared, i: PlanInput): PlanResult {
     alpha /= 2;
   }
 
-  const fastest = buildOption('fastest', mode, fastLegs, pg, o, d, t, now, score, strict);
-  let safest = buildOption('safest', mode, safeLegs, pg, o, d, t, now, score, strict);
+  const fastest = buildOption('fastest', mode, fastLegs, pg, o, d, t, dataNow, score, strict);
+  let safest = buildOption('safest', mode, safeLegs, pg, o, d, t, dataNow, score, strict);
   // never call a lower-scoring route "safest"
   if (safest.score < fastest.score) safest = { ...fastest, kind: 'safest' };
   const same = safest.segment_ids.join(',') === fastest.segment_ids.join(',');
   return {
     fastest, safest, same_route: same, extra_minutes: Math.max(0, Math.round((safest.duration_s - fastest.duration_s) / 60)),
-    departure_at: t.toISOString(), graph_version: pg.graph.version, simulated: pg.graph.simulated, mode,
+    departure_at: t.toISOString(), calculation_basis: basis, graph_version: pg.graph.version, simulated: pg.graph.simulated, mode,
   };
 }
 

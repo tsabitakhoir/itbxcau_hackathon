@@ -1,5 +1,5 @@
 // C-02 Plan your route (Figma: C-02 Plan your route · EN, node 64:93)
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { listPlaces, planRoutes, searchPlaces } from '../api';
 import type { Place } from '../core/types';
@@ -10,10 +10,9 @@ import { ITB_GATE, fmtTime, useGeolocation } from '../components/geo';
 import { useT } from '../i18n';
 import { useStore, type Endpoint } from '../state/store';
 
-function nextSlots(n = 3) {
-  const out: Date[] = []; const d = new Date(); d.setSeconds(0, 0); d.setMinutes(Math.ceil((d.getMinutes() + 1) / 15) * 15);
-  for (let i = 0; i < n; i++) out.push(new Date(d.getTime() + i * 15 * 60e3));
-  return out;
+function nextQuarterHour() {
+  const d = new Date(); d.setSeconds(0, 0); d.setMinutes(Math.ceil((d.getMinutes() + 1) / 15) * 15);
+  return d;
 }
 type Pick = number | 'me';
 
@@ -30,11 +29,10 @@ export default function PlanPage() {
   const [searching, setSearching] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const slots = useMemo(() => nextSlots(2), []);
   // Custom time from the wheel: today, or tomorrow if that time has already passed.
   const [custom, setCustom] = useState<{ h: number; m: number } | null>(null);
   const customDate = (h: number, m: number) => { const d = new Date(); d.setHours(h, m, 0, 0); if (d.getTime() < Date.now() - 60e3) d.setDate(d.getDate() + 1); return d; };
-  const openCustom = () => { if (custom) return; const d = dep === 'now' ? new Date() : new Date(dep); setCustom({ h: d.getHours(), m: d.getMinutes() }); };
+  const openCustom = () => { if (custom) return; const d = nextQuarterHour(); setCustom({ h: d.getHours(), m: d.getMinutes() }); setDep('scheduled'); };
   useEffect(() => { listPlaces().then(setPlaces).catch(() => setPlaces([])); }, []);
 
   const name = (p: Place) => (lang === 'ko' ? p.name_ko : lang === 'id' ? p.name_id : p.name_en ?? p.name_id);
@@ -43,14 +41,15 @@ export default function PlanPage() {
     const p = [...(places ?? []), ...searchResults].find((x) => x.id === k)!; return { lat: p.lat, lng: p.lng, label: p.display_name ?? name(p) };
   };
   const label = (k: Pick | null) => (k == null ? t('c02.pickDestination') : k === 'me' ? ep(k).label : [...(places ?? []), ...searchResults].some((p) => p.id === k) ? ep(k).label : '…');
-  const depDate = custom ? customDate(custom.h, custom.m) : dep === 'now' ? new Date() : new Date(dep);
+  const depDate = dep !== 'now' && custom ? customDate(custom.h, custom.m) : new Date();
+  const departureIsTomorrow = dep !== 'now' && depDate.toDateString() !== new Date().toDateString();
 
   async function compare() {
     if (to == null || (!places && !searchResults.length)) return;
     setBusy(true); setErr(null);
     try {
       const origin = ep(from), destination = ep(to);
-      const plan = await planRoutes({ origin, destination, departure_at: depDate, mode: store.prefs.mode });
+      const plan = await planRoutes({ origin, destination, departure_at: depDate, departure_mode: dep === 'now' ? 'now' : 'scheduled', mode: store.prefs.mode });
       store.set({ origin, destination, departure: depDate.toISOString(), plan });
       nav('/routes');
     } catch (e) { setErr(t(errKey(e))); } finally { setBusy(false); }
@@ -69,7 +68,7 @@ export default function PlanPage() {
     <div className="flex h-full flex-col">
       <TopBar title={t('c02.title')} />
       <div className="flex-1 overflow-y-auto px-6 pb-36">
-        <h2 className="mt-4 text-[26px] font-bold leading-[39px] text-text">{t('c02.heading')}</h2>
+        <h2 className="page-heading mt-4 text-text">{t('c02.heading')}</h2>
         <p className="mt-1.5 flex items-center gap-1.5 text-sm text-muted"><Icon name={store.prefs.mode === 'walk' ? 'walk' : 'wheelchair'} size={15} />{t(store.prefs.mode === 'walk' ? 'c02.subWalk' : 'c02.subWheelchair')}</p>
 
         <section className="relative mt-6 rounded-[22px] bg-surface-2 py-4 pl-[18px] pr-14">
@@ -96,18 +95,16 @@ export default function PlanPage() {
         <div className="mt-6 flex items-baseline justify-between">
           <h3 className="text-lg font-bold text-text-3">{t('c02.departure')}</h3><span className="text-xs text-muted">{t('c02.interval')}</span>
         </div>
-        <div className="mt-3 grid grid-cols-4 gap-2.5">
-          {[{ v: 'now', l: t('c02.now') }, ...slots.map((s) => ({ v: s.toISOString(), l: fmtTime(s, lang) }))].map((o) => (
-            <button key={o.v} onClick={() => { setDep(o.v); setCustom(null); }} aria-pressed={dep === o.v && !custom}
-              className={`h-11 rounded-[14px] text-sm ${dep === o.v && !custom ? 'bg-primary-soft-2 font-bold text-primary' : 'bg-surface-2 font-medium text-muted'}`}>{o.l}</button>
-          ))}
-          <button onClick={openCustom} aria-pressed={!!custom} aria-expanded={!!custom}
-            className={`flex h-11 items-center justify-center gap-1 rounded-[14px] text-sm ${custom ? 'bg-primary-soft-2 font-bold text-primary' : 'bg-surface-2 font-medium text-muted'}`}>
-            <Icon name="clock" size={15} />{custom ? `${String(custom.h).padStart(2, '0')}:${String(custom.m).padStart(2, '0')}` : t('c02.custom')}
+        <div className="mt-3 grid grid-cols-2 gap-2.5">
+          <button type="button" onClick={() => { setDep('now'); setCustom(null); }} aria-pressed={dep === 'now'}
+            className={`h-12 rounded-[14px] text-sm ${dep === 'now' ? 'bg-primary-soft-2 font-bold text-primary' : 'bg-surface-2 font-medium text-muted'}`}>{t('c02.now')}</button>
+          <button type="button" onClick={openCustom} aria-pressed={dep !== 'now'} aria-expanded={!!custom}
+            className={`flex h-12 items-center justify-center gap-1.5 rounded-[14px] text-sm ${dep !== 'now' ? 'bg-primary-soft-2 font-bold text-primary' : 'bg-surface-2 font-medium text-muted'}`}>
+            <Icon name="clock" size={15} />{custom ? fmtTime(depDate, lang) : t('c02.selectTime')}
           </button>
         </div>
         {custom && <div className="mt-3"><TimeWheel hour={custom.h} minute={custom.m} onHour={(h) => setCustom((c) => ({ m: 0, ...c, h }))} onMinute={(m) => setCustom((c) => ({ h: 0, ...c, m }))} labels={{ hour: t('c02.hour'), minute: t('c02.minute') }} /></div>}
-        <p className="mt-3.5 text-xs text-muted">{t(depDate.toDateString() === new Date().toDateString() ? 'c02.scoreBasis' : 'c02.scoreBasisTomorrow', { time: fmtTime(depDate, lang) })}</p>
+        <p className="mt-3.5 text-xs leading-5 text-muted">{t(dep === 'now' ? 'c02.currentBasis' : 'c02.forecastBasis', { time: fmtTime(depDate, lang) })}{departureIsTomorrow && <span className="ml-1 font-medium">{t('c02.nextDay')}</span>}</p>
 
         <div className="mt-7 flex items-baseline justify-between">
           <h3 className="text-lg font-bold text-text-3">{t(searched ? 'c02.searchResults' : 'c02.places')}</h3><span className="text-xs text-muted">{t('c02.placeCount', { n: searched ? searchResults.length : places?.length ?? 0 })}</span>
