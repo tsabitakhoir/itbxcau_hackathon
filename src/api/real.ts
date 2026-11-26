@@ -4,7 +4,7 @@
 export * from './mock';
 
 import * as local from './mock';
-import { ApiError, type Graph, type HeatPoint, type LatLng, type Place, type PlanResult, type Report, type RouteOption } from '../core/types';
+import { ApiError, type Graph, type HeatPoint, type LatLng, type Place, type PlanResult, type Report, type RouteOption, type TravelMode } from '../core/types';
 import { HELP_WEIGHTS, LIT_VALUE, MAX_DETOUR_RATIO, REPORT_PENALTY, SCORE_WEIGHTS } from '../core/config';
 
 const OVERPASS = import.meta.env.VITE_OVERPASS_URL || 'https://overpass-api.de/api/interpreter';
@@ -79,7 +79,8 @@ function makeOption(kind: 'fastest' | 'safest', r: NonNullable<RouteResponse['ro
   const lighting = lightSum / Math.max(samples.length, 1);
   const activity = Math.min(1, roadActivity / Math.max(samples.length, 1) + Math.min(.2, nearby.length * .025));
   const helpAccess = Math.min(1, help / 1.5);
-  const score = Math.round((1 + 4 * (SCORE_WEIGHTS.lighting * lighting + SCORE_WEIGHTS.activity * activity + SCORE_WEIGHTS.help_access * helpAccess) * (1 - penalty)) * 10) / 10;
+  const factors = { lighting, facilities: helpAccess, crowd: activity, reports: 1 - penalty, community_penalty: penalty };
+  const score = Math.round((1 + 4 * (SCORE_WEIGHTS.lighting * factors.lighting + SCORE_WEIGHTS.facilities * factors.facilities + SCORE_WEIGHTS.crowd * factors.crowd + SCORE_WEIGHTS.reports * factors.reports)) * 10) / 10;
   const reasons: RouteOption['reasons'] = [
     { code: 'LIT_PCT', tone: litKnown ? 'info' : 'warn', pct: Math.round(litYes / Math.max(samples.length, 1) * 100) },
     { code: 'OPEN_PLACES', tone: nearby.length ? 'good' : 'warn', count: nearby.length },
@@ -87,10 +88,10 @@ function makeOption(kind: 'fastest' | 'safest', r: NonNullable<RouteResponse['ro
   ];
   const police = nearby.filter((f) => f.tags.amenity === 'police').length;
   if (police) reasons.push({ code: 'POLICE_NEAR', tone: 'good', count: police });
-  return { kind, segment_ids: [], geometry: geom, length_m: Math.round(r.distance), duration_s: Math.round(r.duration), score, factors: { lighting, activity, help_access: helpAccess, community_penalty: penalty }, reasons, worst_segment: null, data_limited: litKnown / Math.max(samples.length, 1) < .7 };
+  return { kind, segment_ids: [], geometry: geom, length_m: Math.round(r.distance), duration_s: Math.round(r.duration), score, factors, reasons, worst_segment: null, data_limited: litKnown / Math.max(samples.length, 1) < .7 };
 }
 
-export async function planRoutes(i: { origin: LatLng; destination: LatLng; departure_at: Date }): Promise<PlanResult> {
+export async function planRoutes(i: { origin: LatLng; destination: LatLng; departure_at: Date; mode?: TravelMode }): Promise<PlanResult> {
   const coords = `${i.origin.lng},${i.origin.lat};${i.destination.lng},${i.destination.lat}`;
   let routed: RouteResponse;
   try { routed = await requestJson<RouteResponse>(`${FOOT_ROUTER}/${coords}?alternatives=3&overview=full&geometries=geojson&steps=false`); }
@@ -107,7 +108,7 @@ export async function planRoutes(i: { origin: LatLng; destination: LatLng; depar
   const safestRaw = eligible.map((r) => makeOption('safest', r, features, reports)).sort((a, b) => b.score - a.score || a.duration_s - b.duration_s)[0];
   const safest = { ...safestRaw, kind: 'safest' as const };
   const same = fastest.geometry.length === safest.geometry.length && fastest.geometry.every((p, n) => distanceM({ lat: p[0], lng: p[1] }, { lat: safest.geometry[n][0], lng: safest.geometry[n][1] }) < 10);
-  return { fastest, safest, same_route: same, extra_minutes: Math.round((safest.duration_s - fastest.duration_s) / 60), departure_at: i.departure_at.toISOString(), graph_version: `osm-${new Date().toISOString().slice(0, 10)}`, simulated: false };
+  return { fastest, safest, same_route: same, extra_minutes: Math.round((safest.duration_s - fastest.duration_s) / 60), departure_at: i.departure_at.toISOString(), graph_version: `osm-${new Date().toISOString().slice(0, 10)}`, simulated: false, mode: i.mode ?? 'walk' };
 }
 
 export async function listPlaces(): Promise<Place[]> {

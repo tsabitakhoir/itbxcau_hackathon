@@ -29,6 +29,12 @@ const P: Record<string, string> = {
   lock: 'M6 11h12v10H6zM8 11V7a4 4 0 018 0v4',
   chev: 'M9 6l6 6-6 6',
   trash: 'M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14',
+  walk: 'M13 4a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM9 22l2.5-7M14 22l-1-5-2.5-3 1-5M7 12l3-4 3.5 1 2.5 4',
+  wheelchair: 'M11 4a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM11 6v7h6l2 6M11 9h5M8 10.5a6 6 0 108.5 7.5',
+  volume: 'M11 5L6 9H2v6h4l5 4V5zM15.5 8.5a5 5 0 010 7M19 5a10 10 0 010 14',
+  right: 'M7 19V11a4 4 0 014-4h8M15 3l4 4-4 4',
+  left: 'M17 19V11a4 4 0 00-4-4H5M9 3L5 7l4 4',
+  up: 'M12 20V4M6 10l6-6 6 6',
 };
 export function Icon({ name, size = 24, className = '', filled = false }: { name: keyof typeof P | string; size?: number; className?: string; filled?: boolean }) {
   return (

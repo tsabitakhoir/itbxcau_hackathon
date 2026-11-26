@@ -23,9 +23,9 @@ export default function VerifyPage() {
         <p className="mt-4 rounded-card bg-primary-soft p-3 text-[11px] text-muted">{t('s03.mockNote')}</p>
         <div className="mt-auto space-y-2">
           {state === 'done'
-            ? <button className="btn-primary w-full" onClick={() => nav('/contacts?next=/map')}><Icon name="check" size={20} />{t('s03.done')}</button>
+            ? <button className="btn-primary w-full" onClick={() => nav('/contacts?next=/mode')}><Icon name="check" size={20} />{t('s03.done')}</button>
             : <button className="btn-primary w-full" disabled={state === 'scanning'} onClick={scan}><Icon name="camera" size={20} />{state === 'scanning' ? t('common.loading') : t('s03.scan')}</button>}
-          <button className="btn w-full text-sm text-muted" onClick={() => nav('/contacts?next=/map')}>{t('s03.later')}</button>
+          <button className="btn w-full text-sm text-muted" onClick={() => nav('/contacts?next=/mode')}>{t('s03.later')}</button>
         </div>
       </div>
     </div>

@@ -1,9 +1,9 @@
 // FE mock of the API contract (fe.md). Same signatures as src/api/index.ts.
 // All data is SIMULATED around ITB Bandung. Errors can be forced with ?mockError=OUT_OF_AREA etc.
-import { CONFIRM_THRESHOLD, DEMO_MODE, EMERGENCY_NUMBERS, LATE_GRACE_MIN, WALK_SPEED_MPS } from '../core/config';
+import { CONFIRM_THRESHOLD, DEMO_MODE, EMERGENCY_NUMBERS, LATE_GRACE_MIN, SCORE_WEIGHTS, WALK_SPEED_MPS } from '../core/config';
 import {
   ApiError,
-  type ApiErrorCode, type Country, type EmergencyContact, type Graph, type HeatPoint, type LatLng, type Place, type PlanResult,
+  type ApiErrorCode, type Country, type Maneuver, type NavStep, type TravelMode, type EmergencyContact, type Graph, type HeatPoint, type LatLng, type Place, type PlanResult,
   type Profile, type Report, type ReportCategory, type RouteKind, type RouteOption, type SharedTrip, type SosResult, type Trip,
 } from '../core/types';
 
@@ -57,46 +57,85 @@ function distM(a: LatLng, b: LatLng) { const R = 6371000, r = Math.PI / 180; con
 function pathLen(g: [number, number][]) { let s = 0; for (let i = 1; i < g.length; i++) s += distM({ lat: g[i - 1][0], lng: g[i - 1][1] }, { lat: g[i][0], lng: g[i][1] }); return s; }
 function hourOf(d: Date) { return d.getHours() + d.getMinutes() / 60; }
 
-export async function planRoutes(i: { origin: LatLng; destination: LatLng; departure_at: Date }): Promise<PlanResult> {
-  await wait(600); maybeFail();
-  if (!inBox(i.origin) || !inBox(i.destination)) throw new ApiError('OUT_OF_AREA', 'Outside simulated area');
-  if (distM(i.origin, i.destination) < 30) throw new ApiError('NO_ROUTE', 'Origin and destination are the same');
-  const o = i.origin, d = i.destination;
+/** Simple turn list from a polyline (bearing change between legs). */
+function navSteps(g: [number, number][]): NavStep[] {
+  const brg = (p: [number, number], q: [number, number]) => Math.atan2((q[1] - p[1]) * Math.cos(p[0] * Math.PI / 180), q[0] - p[0]) * 180 / Math.PI;
+  const out: NavStep[] = [{ maneuver: 'depart', name: null, distance_m: 0, at: g[0] }];
+  for (let k = 1; k < g.length - 1; k++) {
+    let d = brg(g[k], g[k + 1]) - brg(g[k - 1], g[k]); d = ((d + 540) % 360) - 180;
+    const m: Maneuver = Math.abs(d) < 20 ? 'straight' : d > 0 ? (d > 120 ? 'sharp_right' : d > 45 ? 'right' : 'slight_right') : (d < -120 ? 'sharp_left' : d < -45 ? 'left' : 'slight_left');
+    out.push({ maneuver: m, name: k % 2 ? 'Jl. Ir. H. Juanda' : 'Jl. Ganesha', distance_m: Math.round(pathLen(g.slice(k - 1, k + 1))), at: g[k] });
+  }
+  out.push({ maneuver: 'arrive', name: null, distance_m: Math.round(pathLen(g.slice(-2))), at: g[g.length - 1] });
+  return out;
+}
+const mid = (g: [number, number][]): [number, number] => { const k = Math.floor(g.length / 2); return [(g[k - 1][0] + g[k][0]) / 2, (g[k - 1][1] + g[k][1]) / 2]; };
+
+function mockPlan(i: { origin: LatLng; destination: LatLng; departure_at: Date; mode?: TravelMode }, withLater: boolean): PlanResult {
+  const o = i.origin, d = i.destination; const mode = i.mode ?? 'walk'; const wc = mode === 'wheelchair';
   // fastest: zig-zag through the "alleys" (diagonal-ish); safest: along the main roads (L-shape via a wider corner)
   const fast: [number, number][] = [[o.lat, o.lng], [o.lat + (d.lat - o.lat) * 0.35, o.lng + (d.lng - o.lng) * 0.2], [o.lat + (d.lat - o.lat) * 0.6, o.lng + (d.lng - o.lng) * 0.65], [d.lat, d.lng]];
   const safe: [number, number][] = [[o.lat, o.lng], [o.lat, o.lng + (d.lng - o.lng) * 0.15], [d.lat + (d.lat - o.lat) * 0.12, o.lng + (d.lng - o.lng) * 0.15], [d.lat + (d.lat - o.lat) * 0.12, d.lng], [d.lat, d.lng]];
   const h = hourOf(i.departure_at);
   const night = h >= 21 || h < 5; // shops closed, quiet -> bigger gap (Temporal Data)
+  const speed = wc ? WALK_SPEED_MPS * 0.85 : WALK_SPEED_MPS;
   const fl = pathLen(fast), sl = Math.max(pathLen(safe), fl * 1.12);
   const reports = load().reports.filter((r) => r.confirmed);
+  const fastPenalty = reports.some((r) => r.segment_id === 42) ? 0.25 : 0.12;
   const fastest: RouteOption = {
-    kind: 'fastest', segment_ids: [12, 40, 41, 42], geometry: fast, length_m: Math.round(fl), duration_s: Math.round(fl / WALK_SPEED_MPS),
+    kind: 'fastest', mode, segment_ids: [12, 40, 41, 42], geometry: fast, length_m: Math.round(fl), duration_s: Math.round(fl / speed),
     score: 0,
-    factors: { lighting: 0.55, activity: night ? 0.4 : 0.7, help_access: night ? 0.35 : 0.6, community_penalty: reports.some((r) => r.segment_id === 42) ? 0.25 : 0.12 },
+    factors: { lighting: 0.55, facilities: night ? 0.35 : 0.6, crowd: night ? 0.4 : 0.7, reports: 1 - fastPenalty, community_penalty: fastPenalty },
     reasons: [
       { code: 'DARK_STRETCH', tone: 'bad', meters: 160, name: 'Gg. Sekeloa' },
       { code: 'CONFIRMED_REPORTS', tone: 'bad', count: reports.filter((r) => [40, 41, 42].includes(r.segment_id ?? -1)).length },
       { code: 'OPEN_PLACES', tone: 'warn', count: night ? 1 : 3 },
       { code: 'QUIET_STRETCH', tone: 'warn', meters: 120, name: 'Gg. Sekeloa' },
+      ...(wc ? [{ code: 'STEPS', tone: 'bad', count: 2 } as const, { code: 'STEEP', tone: 'warn', meters: 60 } as const] : []),
     ],
     worst_segment: night ? { id: 41, name: 'Gg. Sekeloa', score: 1.8 } : null, data_limited: false,
+    watch_areas: [
+      { segment_id: 41, name: 'Gg. Sekeloa', kind: 'dark', meters: 160, score: 1.8, at: mid(fast) },
+      ...(wc ? [{ segment_id: 42, name: 'Gg. Sekeloa', kind: 'steps', meters: 12, score: 1.5, at: fast[2] } as const] : []),
+    ],
+    access: wc ? { steps: 2, steep_m: 60, narrow_m: 140, lowered_kerbs: 1, accessible_toilets: 0, wheelchair_ok: false } : undefined,
+    steps: navSteps(fast),
   };
   const safest: RouteOption = {
-    kind: 'safest', segment_ids: [12, 13, 27, 28], geometry: safe, length_m: Math.round(sl), duration_s: Math.round(sl / WALK_SPEED_MPS),
+    kind: 'safest', mode, segment_ids: [12, 13, 27, 28], geometry: safe, length_m: Math.round(sl), duration_s: Math.round(sl / speed),
     score: 0,
-    factors: { lighting: 0.92, activity: night ? 0.74 : 0.86, help_access: 0.8, community_penalty: 0 },
+    factors: { lighting: 0.92, facilities: 0.8, crowd: night ? 0.74 : 0.86, reports: 1, community_penalty: 0 },
     reasons: [
       { code: 'OPEN_PLACES', tone: 'good', count: night ? 3 : 7 },
       { code: 'LIT_PCT', tone: 'good', pct: 90 },
       { code: 'POLICE_NEAR', tone: 'good', count: 1 },
       { code: 'CONFIRMED_REPORTS', tone: 'good', count: 0 },
+      ...(wc ? [{ code: 'LOWERED_KERBS', tone: 'good', count: 6 } as const, { code: 'ACCESSIBLE_TOILET', tone: 'good', count: 2 } as const] : []),
     ],
     worst_segment: null, data_limited: false,
+    watch_areas: [{ segment_id: 27, name: 'Jl. Ganesha', kind: 'quiet', meters: 40, score: 3.4, at: mid(safe) }],
+    access: wc ? { steps: 0, steep_m: 0, narrow_m: 20, lowered_kerbs: 6, accessible_toilets: 2, wheelchair_ok: true } : undefined,
+    steps: navSteps(safe),
   };
-  // score = 1 + 4 * base * (1 - penalty), same formula as src/core (fe.md)
-  for (const r of [fastest, safest]) { const f = r.factors; r.score = Math.round((1 + 4 * (0.4 * f.lighting + 0.3 * f.activity + 0.3 * f.help_access) * (1 - f.community_penalty)) * 10) / 10; }
+  for (const r of [fastest, safest]) r.score = scoreOf(r.factors);
   if (fastest.score >= 2.5) fastest.worst_segment = null;
-  return { fastest, safest, same_route: false, extra_minutes: Math.round((safest.duration_s - fastest.duration_s) / 60), departure_at: i.departure_at.toISOString(), graph_version: GRAPH_VERSION, simulated: true };
+  if (withLater) {
+    const at = new Date(i.departure_at.getTime() + 3600e3);
+    const later = mockPlan({ ...i, departure_at: at }, false);
+    fastest.score_later = { at: at.toISOString(), score: later.fastest.score };
+    safest.score_later = { at: at.toISOString(), score: later.safest.score };
+  }
+  return { fastest, safest, same_route: false, extra_minutes: Math.round((safest.duration_s - fastest.duration_s) / 60), departure_at: i.departure_at.toISOString(), graph_version: GRAPH_VERSION, simulated: true, mode };
+}
+
+/** score = 1 + 4 * Σ SCORE_WEIGHTS * factor (lighting 30, facilities 25, crowd 20, reports 25). */
+const scoreOf = (f: RouteOption['factors']) => Math.round((1 + 4 * (SCORE_WEIGHTS.lighting * f.lighting + SCORE_WEIGHTS.facilities * f.facilities + SCORE_WEIGHTS.crowd * f.crowd + SCORE_WEIGHTS.reports * f.reports)) * 10) / 10;
+
+export async function planRoutes(i: { origin: LatLng; destination: LatLng; departure_at: Date; mode?: TravelMode }): Promise<PlanResult> {
+  await wait(600); maybeFail();
+  if (!inBox(i.origin) || !inBox(i.destination)) throw new ApiError('OUT_OF_AREA', 'Outside simulated area');
+  if (distM(i.origin, i.destination) < 30) throw new ApiError('NO_ROUTE', 'Origin and destination are the same');
+  return mockPlan(i, true);
 }
 
 export async function getActivityHeatmap(departure_at: Date): Promise<HeatPoint[]> {

@@ -4,6 +4,7 @@ import { StoreProvider } from './state/store';
 import ArrivedPage from './pages/ArrivedPage';
 import ContactsPage from './pages/ContactsPage';
 import MapPage from './pages/MapPage';
+import ModePage from './pages/ModePage';
 import OnboardingPage from './pages/OnboardingPage';
 import PlanPage from './pages/PlanPage';
 import ProfilePage from './pages/ProfilePage';
@@ -27,6 +28,7 @@ export default function App() {
             <Route path="/onboarding" element={<OnboardingPage />} />
             <Route path="/verify" element={<VerifyPage />} />
             <Route path="/contacts" element={<ContactsPage />} />
+            <Route path="/mode" element={<ModePage />} />
             <Route path="/map" element={<MapPage />} />
             <Route path="/plan" element={<PlanPage />} />
             <Route path="/routes" element={<RoutesPage />} />

@@ -1,13 +1,15 @@
-// C-05 Walking mode
+// C-05 Navigation (Figma: C-05 Navigation · EN, node 64:438). Voice guidance reads each next turn aloud when enabled.
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { finishTrip, getTrip, listContacts, pushLocation } from '../api';
 import { LOCATION_PUSH_SEC } from '../core/config';
-import type { EmergencyContact, LatLng, Trip } from '../core/types';
+import type { EmergencyContact, LatLng, Maneuver, NavStep, Trip } from '../core/types';
 import { Icon } from '../components/Icon';
 import { FitBounds, FollowPos, MapView, token } from '../components/MapView';
 import { ErrorBox, SimChip, Toast, TopBar, errKey } from '../components/ui';
 import { fmtTime, useGeolocation } from '../components/geo';
+import { speak, stopSpeaking } from '../components/voice';
+import { useStore } from '../state/store';
 import { useT } from '../i18n';
 import { Marker, Polyline, Tooltip } from 'react-leaflet';
 import { meIcon } from '../components/ReportMarkers';
@@ -18,8 +20,13 @@ function along(g: [number, number][], f: number): LatLng {
   return { lat: g[i][0] + (g[i + 1][0] - g[i][0]) * r, lng: g[i][1] + (g[i + 1][1] - g[i][1]) * r };
 }
 
+const distM = (a: [number, number], b: [number, number]) => { const r = Math.PI / 180; return 6371000 * Math.hypot((b[1] - a[1]) * r * Math.cos((a[0] + b[0]) * r / 2), (b[0] - a[0]) * r); };
+const nearestIdx = (g: [number, number][], p: [number, number]) => g.reduce((best, q, i) => (distM(q, p) < distM(g[best], p) ? i : best), 0);
+const turnIcon = (m: Maneuver) => (m.includes('right') ? 'right' : m.includes('left') ? 'left' : m === 'arrive' ? 'pin' : 'up');
+
 export default function WalkPage() {
-  const { tripId = '' } = useParams(); const { t, lang } = useT(); const nav = useNavigate();
+  const { tripId = '' } = useParams(); const { t, lang } = useT(); const nav = useNavigate(); const { prefs } = useStore();
+  const spoken = useRef<string>('');
   const [trip, setTrip] = useState<Trip | null>(null); const [err, setErr] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const { pos: gps, status } = useGeolocation();
@@ -71,6 +78,23 @@ export default function WalkPage() {
     nav(status === 'arrived' ? `/arrived/${trip.id}` : '/map', { replace: true });
   }
 
+  // Next instruction: contract steps if present, else a generic "head to destination".
+  const g0 = trip?.route.geometry ?? [];
+  const stepsIdx = (trip?.route.steps ?? []).map((st) => ({ st, i: nearestIdx(g0, st.at) }));
+  const doneIdx = trip && simulate ? Math.min(0.999, simF) * (g0.length - 1) : pos && g0.length ? nearestIdx(g0, [pos.lat, pos.lng]) : 0;
+  const next: NavStep | undefined = stepsIdx.find((x) => x.st.maneuver !== 'depart' && x.i > doneIdx)?.st;
+  const nextDist = next && pos ? Math.round(distM([pos.lat, pos.lng], next.at) / 10) * 10 : null;
+  const nextTitle = !trip ? '' : next && nextDist != null ? (next.maneuver === 'arrive' ? t('c05.arriveIn', { m: nextDist }) : t(`turn.${next.maneuver}`, { m: nextDist })) : t('c05.nextTitle', { place: trip.destination.label });
+  const nextSub = !trip ? '' : `${next?.name ? `${next.name} · ` : ''}${t(trip.chosen === 'safest' ? (trip.route.mode === 'wheelchair' ? 'c05.nextWheelchair' : 'c05.nextSafe') : 'c05.nextFast')}`;
+
+  // Voice guidance: speak when the instruction changes (not every distance tick).
+  const stepKey = next ? `${next.maneuver}@${next.at.join(',')}` : 'dest';
+  useEffect(() => {
+    if (!prefs.voice || !trip || spoken.current === stepKey) return;
+    spoken.current = stepKey; speak(`${nextTitle}. ${nextSub}`, lang);
+  }, [prefs.voice, stepKey, trip]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => () => stopSpeaking(), []);
+
   if (err) return <div className="p-6"><ErrorBox message={err} onRetry={() => nav('/map')} /></div>;
   if (!trip) return <div className="grid h-full place-items-center text-muted">{t('common.loading')}</div>;
   const remaining = Math.max(0, Math.round((new Date(trip.eta).getTime() - now) / 60e3));
@@ -86,7 +110,7 @@ export default function WalkPage() {
       <div className="relative flex-1">
         <div className="absolute inset-0">
           <MapView>
-            {passed.length > 1 && <Polyline positions={passed} pathOptions={{ color: token('--color-route-safe', 0.35), weight: 7 }} />}
+            {passed.length > 1 && <Polyline positions={passed} pathOptions={{ color: token('--color-route-fast', 0.8), weight: 6 }} />}
             <Polyline positions={g} pathOptions={{ color: '#fff', weight: 11 }} />
             <Polyline positions={g} pathOptions={{ color: token(trip.chosen === 'safest' ? '--color-route-safe' : '--color-route-fast'), weight: 6 }} />
             <FitBounds points={g} />
@@ -95,31 +119,31 @@ export default function WalkPage() {
           </MapView>
         </div>
         <div className="absolute inset-x-6 top-2 z-[500] space-y-3">
-          <div className="flex h-24 items-center gap-5 rounded-card bg-primary px-[17px] text-on-primary shadow-float">
-            <Icon name="turn" size={36} />
+          <div className="flex min-h-[90px] items-center gap-5 rounded-[18px] bg-surface px-5 py-3 shadow-float" aria-live="polite">
+            <Icon name={next ? turnIcon(next.maneuver) : 'right'} size={32} className="shrink-0 text-primary" />
             <div className="min-w-0">
-              <p className="truncate text-xl font-bold">{t('c05.nextTitle', { place: trip.destination.label })}</p>
-              <p className="mt-1 truncate text-[11px]">{t(trip.chosen === 'safest' ? 'c05.nextSafe' : 'c05.nextFast')}</p>
+              <p className="truncate text-xl font-bold text-text">{nextTitle}</p>
+              <p className="mt-1 truncate text-[11px] text-text-2">{nextSub}</p>
             </div>
+            {prefs.voice && <button aria-label={t('c01.voice')} onClick={() => speak(`${nextTitle}. ${nextSub}`, lang)} className="ml-auto grid h-11 w-11 shrink-0 place-items-center rounded-full bg-primary-soft text-primary"><Icon name="volume" size={20} /></button>}
           </div>
-          <button onClick={share} className="flex h-[37px] w-full items-center justify-between rounded-card bg-primary-soft px-3.5 text-xs font-medium">
+          <button onClick={share} className="flex h-[42px] w-full items-center justify-between rounded-[14px] bg-surface-2/95 px-3.5 text-xs font-medium text-text-2">
             <span className="flex items-center gap-3"><span className="h-2 w-2 rounded-full bg-safe-line" />{contact ? t('c05.sharingWith', { name: contact }) : t('c05.sharing')}</span>
             <Icon name="share" size={17} className="text-safe-line" />
           </button>
         </div>
         <button onClick={() => setFollow((v) => !v)} aria-pressed={follow} aria-label={t('c01.myLocation')} className={`absolute bottom-10 right-6 z-[500] grid h-12 w-12 place-items-center rounded-full shadow-float ${follow ? 'bg-primary text-on-primary' : 'bg-surface'}`}><Icon name="locate" /></button>
       </div>
-      <div className="sheet relative z-[600] -mt-5 px-6 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3">
+      <div className="sheet relative z-[600] -mt-5 px-6 pb-[max(2.1rem,env(safe-area-inset-bottom))] pt-3">
         <div className="sheet-handle" />
-        <div className="mt-5 flex items-baseline gap-8"><p className="text-[34px] font-bold leading-none">{t('common.min', { n: remaining })}</p><p className="text-sm text-muted">{t('c05.left', { m: leftM })}</p></div>
-        <p className="mt-3 text-base font-medium">{t('c05.eta', { time: fmtTime(trip.eta, lang) })}</p>
-        <div className="mt-2 flex flex-col items-center">
-          <button aria-label="SOS" onClick={() => nav(`/sos?trip=${trip.id}`)} className="grid h-[86px] w-[86px] place-items-center rounded-full bg-danger text-on-primary shadow-[0_0_0_6px_rgb(var(--color-danger-soft))] active:scale-95">
-            <span className="text-center leading-tight"><span className="block text-[26px] font-bold">SOS</span><span className="block text-[10px]">{t('c05.emergency')}</span></span>
-          </button>
-          <p className="mt-2 text-[11px] text-muted">{t('c05.sosHint')}</p>
-        </div>
-        <button className="btn-primary mt-2 min-h-11 w-full text-sm" onClick={() => end('arrived')}>{t('c05.arrived')}</button>
+        <div className="mt-6 flex items-baseline gap-5"><p className="text-[36px] font-bold leading-none text-text">{t('common.min', { n: remaining })}</p><p className="text-sm text-muted">{t('c05.left', { m: leftM })}</p></div>
+        <p className="mt-4 text-base font-medium text-text">{t('c05.eta', { time: fmtTime(trip.eta, lang) })}</p>
+        <button onClick={() => nav(`/sos?trip=${trip.id}`)} className="mt-5 flex h-14 w-full items-center gap-4 rounded-[16px] bg-danger-soft px-4 text-left active:scale-[.99]" aria-label="SOS">
+          <span className="text-xl font-bold text-danger-text">SOS</span>
+          <span className="text-[13px] text-danger-text">{t('c05.emergency')}</span>
+          <span className="ml-auto text-[11px] text-danger-text">{t('c05.sosHint')}</span>
+        </button>
+        <button className="btn-primary mt-5 w-full" onClick={() => end('arrived')}>{t('c05.arrived')}</button>
         <button className="mt-1 flex min-h-9 w-full items-center justify-center text-xs text-muted" onClick={() => end('cancelled')}>{t('c05.cancel')}</button>
       </div>
       {toast && <Toast>{toast}</Toast>}

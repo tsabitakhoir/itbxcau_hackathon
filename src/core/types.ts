@@ -4,7 +4,10 @@ export type LatLng = { lat: number; lng: number };
 export type Lang = 'en' | 'id' | 'ko';
 export type Country = 'ID' | 'KR';
 export type RouteKind = 'fastest' | 'safest';
-export type Factors = { lighting: number; activity: number; help_access: number; community_penalty: number }; // 0..1
+/** Travel mode chosen on C-00. Wheelchair mode avoids steps and favours ramps/lowered kerbs. */
+export type TravelMode = 'walk' | 'wheelchair';
+/** All 0..1, higher = safer. facilities = places/help nearby, crowd = activity, reports = 1 - community_penalty. */
+export type Factors = { lighting: number; facilities: number; crowd: number; reports: number; community_penalty: number };
 export type ReasonCode =
   | 'OPEN_PLACES'       // {count} toko/tempat buka saat waktu berangkat
   | 'POLICE_NEAR'       // {count}
@@ -13,7 +16,11 @@ export type ReasonCode =
   | 'CONFIRMED_REPORTS' // {count}
   | 'DARK_STRETCH'      // {meters, name} ruas gelap terpanjang >= 50 m
   | 'QUIET_STRETCH'     // {meters, name} ruas sepi terpanjang >= 50 m
-  | 'DATA_LIMITED';     // lebih dari 30% panjang rute lit = unknown
+  | 'DATA_LIMITED'      // lebih dari 30% panjang rute lit = unknown
+  | 'STEPS'             // {count} tangga di rute (wheelchair)
+  | 'STEEP'             // {meters} ruas curam (wheelchair)
+  | 'ACCESSIBLE_TOILET' // {count} toilet ramah kursi roda di dekat rute
+  | 'LOWERED_KERBS';    // {count} trotoar landai/ramp di rute
 export type Reason = { code: ReasonCode; tone: 'good' | 'warn' | 'bad' | 'info'; count?: number; pct?: number; meters?: number; name?: string | null };
 export type RouteOption = {
   kind: RouteKind; segment_ids: number[]; geometry: [number, number][];
@@ -21,10 +28,19 @@ export type RouteOption = {
   factors: Factors; reasons: Reason[];
   worst_segment: { id: number; name: string | null; score: number } | null; // hanya jika score < SCORE_BANDS.caution
   data_limited: boolean;
+  mode?: TravelMode;
+  access?: AccessInfo;            // wheelchair mode only
+  steps?: NavStep[];              // turn-by-turn for C-05
+  watch_areas?: WatchArea[];      // C-04 "Areas to watch out for"
+  score_later?: { at: string; score: number } | null; // score at departure + 1 h (C-04)
 };
-export type PlanResult = { fastest: RouteOption; safest: RouteOption; same_route: boolean; extra_minutes: number; departure_at: string; graph_version: string; simulated: boolean };
+export type AccessInfo = { steps: number; steep_m: number; narrow_m: number; lowered_kerbs: number; accessible_toilets: number; wheelchair_ok: boolean };
+export type Maneuver = 'depart' | 'straight' | 'slight_left' | 'left' | 'sharp_left' | 'slight_right' | 'right' | 'sharp_right' | 'arrive';
+export type NavStep = { maneuver: Maneuver; name: string | null; distance_m: number; at: [number, number] };
+export type WatchArea = { segment_id: number; name: string | null; kind: 'dark' | 'quiet' | 'report' | 'steps' | 'steep' | 'narrow'; meters: number; score: number; at: [number, number] };
+export type PlanResult = { fastest: RouteOption; safest: RouteOption; same_route: boolean; extra_minutes: number; departure_at: string; graph_version: string; simulated: boolean; mode?: TravelMode };
 export type HeatPoint = [number, number, number]; // [lat, lng, intensitas 0..1]
-export type Profile = { id: string; display_name: string; lang: Lang; country: Country; id_verified_mock: boolean };
+export type Profile = { id: string; display_name: string; lang: Lang; country: Country; id_verified_mock: boolean; travel_mode?: TravelMode; voice_guidance?: boolean };
 export type EmergencyContact = { id: string; name: string; phone: string; channel: 'whatsapp' | 'kakao' | 'sms' };
 export type TripStatus = 'active' | 'arrived' | 'sos' | 'cancelled';
 export type Trip = { id: string; status: TripStatus; chosen: RouteKind; departure_at: string; started_at: string; eta: string; arrived_at: string | null; share_token: string; share_url: string; route: RouteOption; destination: { label: string; lat: number; lng: number } };
