@@ -34,3 +34,8 @@
   --radius-sheet: 28px;
   --font-sans: 'Noto Sans KR', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
+
+/* Voice guidance on: a long press reads the item aloud, so the phone's own long-press menu,
+   text selection and tap highlight must not take over the gesture. Text fields stay selectable. */
+html.voice-on body { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+html.voice-on input, html.voice-on textarea { -webkit-user-select: text; user-select: text; }
