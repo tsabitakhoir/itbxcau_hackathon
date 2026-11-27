@@ -147,8 +147,6 @@ const en = {
   "c05.nextTitle": "Head to {place}",
   "c05.nextSafe": "Follow the well-lit main road",
   "c05.nextFast": "Follow the highlighted route",
-  "c05.sharing": "Live location shared",
-  "c05.sharingWith": "Live location shared with {name}",
   "c05.copied": "Link copied",
   "c05.you": "You",
   "c05.left": "{m} m remaining",
@@ -223,9 +221,9 @@ const en = {
   "s05.detail": "Community report",
   "s05.location": "Move the map to place the pin on the spot.",
   "s05.category": "What's the problem?",
-  "s05.photo": "Photos (optional)",
+  "s05.photo": "Photos",
   "s05.photoNote": "Don't photograph people's faces.",
-  "s05.note": "Note (required)",
+  "s05.note": "Note",
   "s05.threshold": "Reports affect route scores after {n} other people confirm them.",
   "s05.submit": "Send report",
   "s05.daysAgo": "{n} days ago",
@@ -334,6 +332,10 @@ const en = {
   "s05.photoRemove": "Remove photo",
   "s05.photoCount": "{n}/{max} photos",
   "s05.noteHint": "Describe what is wrong and where",
+  "s05.requiredLegend": "Must be filled in",
+  "s05.needCategory": "Please choose what the problem is.",
+  "s05.needNote": "Please write a short note about the problem.",
+  "c05.share": "Share live location",
 };
 export default en;
 export type Dict = Record<keyof typeof en, string>;
