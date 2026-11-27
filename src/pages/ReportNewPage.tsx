@@ -24,7 +24,7 @@ export default function ReportNewPage() {
   const { t } = useT(); const nav = useNavigate(); const { pos } = useGeolocation();
   const [center, setCenter] = useState<LatLng | null>(null);
   const [cat, setCat] = useState<ReportCategory | null>(null); const [note, setNote] = useState(''); const [photos, setPhotos] = useState<File[]>([]);
-  const [busy, setBusy] = useState(false); const [err, setErr] = useState<string | null>(null); const [sent, setSent] = useState(false); const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false); const [err, setErr] = useState<string | null>(null); const [sent, setSent] = useState(false); const [confirming, setConfirming] = useState(false); const [tried, setTried] = useState(false);
   // Previews of the chosen photos, shown in the form and in the confirm and "sent" popups.
   const [urls, setUrls] = useState<string[]>([]);
   useEffect(() => {
@@ -41,6 +41,14 @@ export default function ReportNewPage() {
     </ul>
   );
   const at = center ?? pos ?? ITB_GATE;
+  const star = <span aria-hidden="true" className="ml-0.5 text-danger-text">*</span>;
+  const needCat = tried && !cat; const needNote = tried && !note.trim();
+  // Required fields: category and note. A tap on Send with something missing shows a notice instead of staying silent.
+  function review() {
+    if (cat && note.trim()) { setTried(false); setConfirming(true); return; }
+    setTried(true);
+    window.setTimeout(() => document.getElementById(!cat ? 'report-category' : 'report-note')?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 50);
+  }
   async function submit() {
     if (!cat || !note.trim()) return; setBusy(true); setErr(null);
     try { await createReport({ pos: at, category: cat, note: note.trim() || undefined, photos }); setConfirming(false); setSent(true); }
@@ -58,7 +66,9 @@ export default function ReportNewPage() {
           <Icon name="pin" size={34} className="pointer-events-none absolute left-1/2 top-1/2 z-[500] -translate-x-1/2 -translate-y-full text-danger" />
         </div>
         <p className="mt-2 text-[11px] text-muted">{t('s05.location')}</p>
-        <h2 className="mt-5 text-base font-bold">{t('s05.category')}</h2>
+        <p className="mt-4 text-[11px] text-muted"><span aria-hidden="true" className="text-danger-text">* </span>{t('s05.requiredLegend')}</p>
+        <h2 id="report-category" className="mt-3 text-base font-bold">{t('s05.category')}{star}</h2>
+        {needCat && <p role="alert" className="mt-1.5 text-xs font-medium text-danger-text">{t('s05.needCategory')}</p>}
         <div className="mt-3 grid grid-cols-2 gap-2">
           {CATS.map((c) => <button key={c} onClick={() => setCat(c)} aria-pressed={cat === c} className={`flex h-12 items-center gap-2 rounded-card px-3.5 text-left text-xs ${cat === c ? 'bg-primary-soft-2 font-bold text-primary-strong' : 'bg-surface-2 font-medium text-muted'}`}>{cat === c && <Icon name="check" size={18} className="text-safe-line" />}{t(`category.${c}`)}</button>)}
         </div>
@@ -86,13 +96,14 @@ export default function ReportNewPage() {
           </ul>
         )}
         <p className="mt-1 text-[11px] text-danger-text">{t('s05.photoNote')}</p>
-        <h2 className="mt-5 text-base font-bold">{t('s05.note')}</h2>
-        <textarea className="input mt-3 min-h-20 py-3" maxLength={280} required aria-required="true" placeholder={t('s05.noteHint')} value={note} onChange={(e) => setNote(e.target.value)} />
+        <h2 id="report-note" className="mt-5 text-base font-bold">{t('s05.note')}{star}</h2>
+        <textarea className="input mt-3 min-h-20 py-3" maxLength={280} required aria-required="true" aria-invalid={needNote} placeholder={t('s05.noteHint')} value={note} onChange={(e) => setNote(e.target.value)} />
+        {needNote && <p role="alert" className="mt-1.5 text-xs font-medium text-danger-text">{t('s05.needNote')}</p>}
         <p className="mt-3 text-[11px] text-muted">{t('s05.threshold', { n: CONFIRM_THRESHOLD })}</p>
         {err && <div className="mt-3"><ErrorBox message={err} /></div>}
       </div>
       <div className="absolute inset-x-0 bottom-[81px] z-[600] bg-gradient-to-t from-bg via-bg to-transparent px-6 pb-3 pt-6">
-        <button className="btn-primary w-full" disabled={!cat || !note.trim() || busy} onClick={() => setConfirming(true)}>{t('s05.submit')}</button>
+        <button className="btn-primary w-full" disabled={busy} onClick={review}>{t('s05.submit')}</button>
       </div>
       <BottomNav active="report" />
       {confirming && cat && (

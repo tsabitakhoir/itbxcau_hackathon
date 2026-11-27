@@ -1,9 +1,9 @@
 // C-05 Navigation (Figma: C-05 Navigation · EN, node 64:438). Voice guidance reads each next turn aloud when enabled.
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { finishTrip, getTrip, listContacts, pushLocation } from '../api';
+import { finishTrip, getTrip, pushLocation } from '../api';
 import { LOCATION_PUSH_SEC } from '../core/config';
-import type { EmergencyContact, LatLng, Maneuver, NavStep, Trip } from '../core/types';
+import type { LatLng, Maneuver, NavStep, Trip } from '../core/types';
 import { Icon } from '../components/Icon';
 import { FitBounds, FollowPos, MapView, token } from '../components/MapView';
 import { ErrorBox, SimChip, Toast, TopBar, errKey } from '../components/ui';
@@ -37,8 +37,6 @@ export default function WalkPage() {
   const [follow, setFollow] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [card, setCard] = useState(0); const strip = useRef<HTMLDivElement>(null);
-  const [contacts, setContacts] = useState<EmergencyContact[]>([]);
-  useEffect(() => { listContacts().then(setContacts).catch(() => undefined); }, []);
 
   useEffect(() => { getTrip(tripId).then(setTrip).catch((e) => setErr(t(errKey(e)))); }, [tripId, t]);
   // If there is no real GPS fix near the route (e.g. desktop demo), simulate walking along the route.
@@ -111,11 +109,10 @@ export default function WalkPage() {
   const done = simulate ? Math.min(0.999, simF) * (g.length - 1) : 0;
   const passed: [number, number][] = simulate && pos ? [...g.slice(0, Math.floor(done) + 1), [pos.lat, pos.lng]] : [];
   const leftM = Math.round(trip.route.length_m * (1 - (simulate ? simF : 0)) / 10) * 10;
-  const contact = contacts[0]?.name;
 
   return (
     <div className="relative flex h-full flex-col bg-surface">
-      <TopBar title={t('c05.title')} right={<SimChip className="mr-3" />} />
+      <TopBar title={t('c05.title')} right={<div className="mr-3 flex items-center gap-1.5"><SimChip /><button aria-label={t('c05.share')} onClick={share} className="grid h-11 w-11 place-items-center rounded-full bg-surface-2 text-safe-line"><Icon name="share" size={19} /></button></div>} />
       <div className="relative flex-1">
         <div className="absolute inset-0">
           <MapView>
@@ -148,10 +145,6 @@ export default function WalkPage() {
               </div>
             )}
           </div>
-          <button onClick={share} className="flex h-[42px] w-full items-center justify-between rounded-[14px] bg-surface-2/95 px-3.5 text-xs font-medium text-text-2">
-            <span className="flex items-center gap-3"><span className="h-2 w-2 rounded-full bg-safe-line" />{contact ? t('c05.sharingWith', { name: contact }) : t('c05.sharing')}</span>
-            <Icon name="share" size={17} className="text-safe-line" />
-          </button>
         </div>
         <Sheet peek={92} onCollapsedChange={setCollapsed}
           above={<div className="flex items-end justify-end gap-3 px-6 pb-4">
