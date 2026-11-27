@@ -190,11 +190,12 @@ export async function resolveSos(sos_id: string): Promise<void> {
 
 // ---------- reports ----------
 export async function listReports(): Promise<Report[]> { await wait(); return load().reports; }
-export async function createReport(i: { pos: LatLng; category: ReportCategory; note?: string; photo?: File }): Promise<Report> {
+export async function createReport(i: { pos: LatLng; category: ReportCategory; note?: string; photo?: File; photos?: File[] }): Promise<Report> {
   await wait(500);
-  if (i.photo && i.photo.size > 5 * 1024 * 1024) throw new ApiError('PHOTO_TOO_LARGE', 'Photo too large');
-  const photo_url = i.photo ? URL.createObjectURL(i.photo) : null;
-  return mutate((db) => { const r: Report = { id: uid(), lat: i.pos.lat, lng: i.pos.lng, segment_id: null, category: i.category, note: i.note ?? null, photo_url, created_at: new Date().toISOString(), confirm_count: 0, confirmed: false, is_mine: true, confirmed_by_me: false, simulated: false }; db.reports.unshift(r); return r; });
+  const files = i.photos ?? (i.photo ? [i.photo] : []);
+  if (files.some((f) => f.size > 5 * 1024 * 1024)) throw new ApiError('PHOTO_TOO_LARGE', 'Photo too large');
+  const photo_urls = files.map((f) => URL.createObjectURL(f)); const photo_url = photo_urls[0] ?? null;
+  return mutate((db) => { const r: Report = { id: uid(), lat: i.pos.lat, lng: i.pos.lng, segment_id: null, category: i.category, note: i.note ?? null, photo_url, photo_urls, created_at: new Date().toISOString(), confirm_count: 0, confirmed: false, is_mine: true, confirmed_by_me: false, simulated: false }; db.reports.unshift(r); return r; });
 }
 export async function confirmReport(report_id: string): Promise<void> {
   await wait();

@@ -128,7 +128,7 @@ export function BottomNav({ active }: { active: 'home' | 'report' | 'profile' })
 export function Modal({ title, children, actions }: { title: string; children?: ReactNode; actions: ReactNode }) {
   return (
     <div className="fixed inset-0 z-[1200] grid place-items-center bg-black/40 px-6" role="presentation">
-      <div role="dialog" aria-modal="true" aria-label={title} className="w-full max-w-sm rounded-[22px] bg-surface p-5 shadow-float">
+      <div role="dialog" aria-modal="true" aria-label={title} className="max-h-[88vh] w-full max-w-sm overflow-y-auto rounded-[22px] bg-surface p-5 shadow-float">
         <h2 className="text-lg font-bold text-text">{title}</h2>
         {children && <div className="mt-2 text-sm leading-6 text-text-2">{children}</div>}
         <div className="mt-5 flex gap-2.5">{actions}</div>
