@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useStore } from '../state/store';
 import { useT } from '../i18n';
-import { speak, stopSpeaking } from './voice';
+import { speak, stopSpeaking, unlockVoice } from './voice';
 
 const HOLD_MS = 550; const MOVE_PX = 10;
 const SPEAKABLE = '[aria-label], button, a, label, h1, h2, h3, h4, p, li, summary, [role="option"], [role="dialog"]';
@@ -20,6 +20,14 @@ function textOf(start: Element): string {
 
 export function LongPressSpeak() {
   const { prefs } = useStore(); const { lang } = useT();
+  // Unlock speech on the first tap/key press of the visit, whatever the voice setting is, so that
+  // turning voice on (or having it on by default) works at once without an off/on toggle.
+  useEffect(() => {
+    const events = ['pointerup', 'touchend', 'click', 'keydown'] as const;
+    const once = () => { unlockVoice(); events.forEach((e) => document.removeEventListener(e, once, true)); };
+    events.forEach((e) => document.addEventListener(e, once, true));
+    return () => events.forEach((e) => document.removeEventListener(e, once, true));
+  }, []);
   useEffect(() => {
     if (!prefs.voice) return;
     let timer = 0; let x0 = 0; let y0 = 0; let fired = false;
