@@ -226,7 +226,7 @@ const id: Dict = {
   "s05.category": "Apa masalahnya?",
   "s05.photo": "Foto (opsional)",
   "s05.photoNote": "Jangan memotret wajah orang.",
-  "s05.note": "Catatan (opsional)",
+  "s05.note": "Catatan (wajib)",
   "s05.threshold": "Laporan memengaruhi skor setelah {n} orang lain mengonfirmasi.",
   "s05.submit": "Kirim laporan",
   "s05.daysAgo": "{n} hari lalu",
@@ -333,5 +333,7 @@ const id: Dict = {
   "s05.photoCamera": "Ambil foto",
   "s05.photoGallery": "Pilih dari galeri",
   "s05.photoRemove": "Hapus foto",
+  "s05.photoCount": "{n}/{max} foto",
+  "s05.noteHint": "Ceritakan masalahnya dan lokasinya",
 };
 export default id;

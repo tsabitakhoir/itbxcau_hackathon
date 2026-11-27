@@ -223,9 +223,9 @@ const en = {
   "s05.detail": "Community report",
   "s05.location": "Move the map to place the pin on the spot.",
   "s05.category": "What's the problem?",
-  "s05.photo": "Photo (optional)",
+  "s05.photo": "Photos (optional)",
   "s05.photoNote": "Don't photograph people's faces.",
-  "s05.note": "Note (optional)",
+  "s05.note": "Note (required)",
   "s05.threshold": "Reports affect route scores after {n} other people confirm them.",
   "s05.submit": "Send report",
   "s05.daysAgo": "{n} days ago",
@@ -332,6 +332,8 @@ const en = {
   "s05.photoCamera": "Take a photo",
   "s05.photoGallery": "Choose from gallery",
   "s05.photoRemove": "Remove photo",
+  "s05.photoCount": "{n}/{max} photos",
+  "s05.noteHint": "Describe what is wrong and where",
 };
 export default en;
 export type Dict = Record<keyof typeof en, string>;

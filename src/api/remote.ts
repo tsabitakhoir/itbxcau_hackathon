@@ -157,8 +157,9 @@ export async function resolveSos(sos_id: string): Promise<void> {
 
 // ---------- reports ----------
 type ReportRow = { id: string; lat: number; lng: number; segment_id: number | null; category: ReportCategory; note: string | null; photo_path: string | null; created_at: string; confirm_count: number; is_mine: boolean; confirmed_by_me: boolean; is_simulated: boolean };
-const photoUrl = (path: string | null) => (path ? sb().storage.from(BUCKET).getPublicUrl(path).data.publicUrl : null);
-const toReport = (r: ReportRow): Report => ({ id: r.id, lat: r.lat, lng: r.lng, segment_id: r.segment_id, category: r.category, note: r.note, photo_url: photoUrl(r.photo_path), created_at: r.created_at, confirm_count: r.confirm_count, confirmed: r.confirm_count >= CONFIRM_THRESHOLD, is_mine: !!r.is_mine, confirmed_by_me: !!r.confirmed_by_me, simulated: r.is_simulated });
+// `photo_path` holds one or more storage paths separated by ',' (no schema change needed for several photos).
+const photoUrls = (path: string | null) => (path ? path.split(',').filter(Boolean).map((p) => sb().storage.from(BUCKET).getPublicUrl(p).data.publicUrl) : []);
+const toReport = (r: ReportRow): Report => ({ id: r.id, lat: r.lat, lng: r.lng, segment_id: r.segment_id, category: r.category, note: r.note, photo_url: photoUrls(r.photo_path)[0] ?? null, photo_urls: photoUrls(r.photo_path), created_at: r.created_at, confirm_count: r.confirm_count, confirmed: r.confirm_count >= CONFIRM_THRESHOLD, is_mine: !!r.is_mine, confirmed_by_me: !!r.confirmed_by_me, simulated: r.is_simulated });
 
 export async function listReports(): Promise<Report[]> {
   await uid();
@@ -184,15 +185,18 @@ async function compress(file: File): Promise<Blob> {
   throw new ApiError('PHOTO_TOO_LARGE', 'Photo is too large');
 }
 
-export async function createReport(i: { pos: LatLng; category: ReportCategory; note?: string; photo?: File }): Promise<Report> {
+export async function createReport(i: { pos: LatLng; category: ReportCategory; note?: string; photo?: File; photos?: File[] }): Promise<Report> {
   const user = await uid();
-  let photo_path: string | null = null;
-  if (i.photo) {
-    const blob = await compress(i.photo);
-    photo_path = `${user}/${crypto.randomUUID()}.jpg`;
-    const { error } = await sb().storage.from(BUCKET).upload(photo_path, blob, { contentType: 'image/jpeg' });
+  const files = i.photos ?? (i.photo ? [i.photo] : []);
+  const paths: string[] = [];
+  for (const file of files) {
+    const blob = await compress(file);
+    const path = `${user}/${crypto.randomUUID()}.jpg`;
+    const { error } = await sb().storage.from(BUCKET).upload(path, blob, { contentType: 'image/jpeg' });
     if (error) fail(error, 'Photo upload failed');
+    paths.push(path);
   }
+  const photo_path = paths.length ? paths.join(',') : null;
   const seg = await segmentAt(i.pos).catch(() => ({ segment_id: null, graph_version: 'none' }));
   const { data, error } = await sb().from('reports').insert({ lat: i.pos.lat, lng: i.pos.lng, category: i.category, note: i.note ?? null, photo_path, segment_id: seg.segment_id, graph_version: seg.graph_version }).select('id').single();
   if (error) fail(error, 'Could not save report');

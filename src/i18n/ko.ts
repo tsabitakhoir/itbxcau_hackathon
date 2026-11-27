@@ -226,7 +226,7 @@ const ko: Dict = {
   "s05.category": "어떤 문제인가요?",
   "s05.photo": "사진 (선택)",
   "s05.photoNote": "사람 얼굴은 찍지 마세요.",
-  "s05.note": "메모 (선택)",
+  "s05.note": "설명 (필수)",
   "s05.threshold": "다른 {n}명이 확인하면 경로 점수에 반영돼요.",
   "s05.submit": "제보 보내기",
   "s05.daysAgo": "{n}일 전",
@@ -333,5 +333,7 @@ const ko: Dict = {
   "s05.photoCamera": "사진 찍기",
   "s05.photoGallery": "갤러리에서 선택",
   "s05.photoRemove": "사진 삭제",
+  "s05.photoCount": "사진 {n}/{max}장",
+  "s05.noteHint": "무엇이 문제인지, 어디인지 적어 주세요",
 };
 export default ko;

@@ -12,6 +12,7 @@ import { BottomNav, ErrorBox, Modal, SimChip, TopBar, errKey } from '../componen
 import { ITB_GATE, useGeolocation } from '../components/geo';
 import { useT } from '../i18n';
 
+const MAX_PHOTOS = 5;
 const CATS: ReportCategory[] = ['dark', 'broken_light', 'deserted', 'harassment', 'other'];
 
 function CenterPicker({ onMove }: { onMove: (p: LatLng) => void }) {
@@ -22,20 +23,27 @@ function CenterPicker({ onMove }: { onMove: (p: LatLng) => void }) {
 export default function ReportNewPage() {
   const { t } = useT(); const nav = useNavigate(); const { pos } = useGeolocation();
   const [center, setCenter] = useState<LatLng | null>(null);
-  const [cat, setCat] = useState<ReportCategory | null>(null); const [note, setNote] = useState(''); const [photo, setPhoto] = useState<File | null>(null);
+  const [cat, setCat] = useState<ReportCategory | null>(null); const [note, setNote] = useState(''); const [photos, setPhotos] = useState<File[]>([]);
   const [busy, setBusy] = useState(false); const [err, setErr] = useState<string | null>(null); const [sent, setSent] = useState(false); const [confirming, setConfirming] = useState(false);
-  // Preview of the chosen photo, shown in the confirm and "sent" popups.
-  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  // Previews of the chosen photos, shown in the form and in the confirm and "sent" popups.
+  const [urls, setUrls] = useState<string[]>([]);
   useEffect(() => {
-    if (!photo) { setPhotoUrl(null); return; }
-    const url = URL.createObjectURL(photo); setPhotoUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [photo]);
-  const preview = photoUrl && <img src={photoUrl} alt={t('s05.photoAlt')} className="mt-3 max-h-48 w-full rounded-[14px] object-cover" />;
+    const made = photos.map((f) => URL.createObjectURL(f)); setUrls(made);
+    return () => made.forEach((u) => URL.revokeObjectURL(u));
+  }, [photos]);
+  const addPhotos = (list: FileList | null) => {
+    const picked = Array.from(list ?? []).filter((f) => f.type.startsWith('image/'));
+    if (picked.length) setPhotos((cur) => [...cur, ...picked].slice(0, MAX_PHOTOS));
+  };
+  const preview = urls.length > 0 && (
+    <ul className={`mt-3 grid gap-2 ${urls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+      {urls.map((u) => <li key={u}><img src={u} alt={t('s05.photoAlt')} className={`w-full rounded-[14px] object-cover ${urls.length === 1 ? 'max-h-48' : 'h-24'}`} /></li>)}
+    </ul>
+  );
   const at = center ?? pos ?? ITB_GATE;
   async function submit() {
-    if (!cat) return; setBusy(true); setErr(null);
-    try { await createReport({ pos: at, category: cat, note: note.trim() || undefined, photo: photo ?? undefined }); setConfirming(false); setSent(true); }
+    if (!cat || !note.trim()) return; setBusy(true); setErr(null);
+    try { await createReport({ pos: at, category: cat, note: note.trim() || undefined, photos }); setConfirming(false); setSent(true); }
     catch (e) { setConfirming(false); setErr(t(errKey(e))); } finally { setBusy(false); }
   }
   return (
@@ -57,29 +65,34 @@ export default function ReportNewPage() {
         <h2 className="mt-5 text-base font-bold">{t('s05.photo')}</h2>
         <div className="mt-3 grid grid-cols-2 gap-2">
           {([['camera', 's05.photoCamera', 'camera'], ['gallery', 's05.photoGallery', 'layers']] as const).map(([k, label, icon]) => (
-            <label key={k} className="flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-card bg-surface-2 px-3 text-xs font-medium text-text-2 focus-within:ring-2 focus-within:ring-primary">
+            <label key={k} className={`flex min-h-12 items-center justify-center gap-2 rounded-card bg-surface-2 px-3 text-xs font-medium text-text-2 focus-within:ring-2 focus-within:ring-primary ${photos.length >= MAX_PHOTOS ? 'opacity-50' : 'cursor-pointer'}`}>
               <Icon name={icon} size={18} className="text-muted" />{t(label)}
-              {/* The camera input opens the camera; the gallery input has no `capture`, so the phone shows its photo library. */}
-              <input type="file" accept="image/*" {...(k === 'camera' ? { capture: 'environment' as const } : {})} className="sr-only"
-                onChange={(e) => { setPhoto(e.target.files?.[0] ?? photo); e.target.value = ''; }} />
+              {/* The camera input opens the camera (one shot at a time); the gallery input has no `capture` and allows several photos. */}
+              <input type="file" accept="image/*" disabled={photos.length >= MAX_PHOTOS} {...(k === 'camera' ? { capture: 'environment' as const } : { multiple: true })} className="sr-only"
+                onChange={(e) => { addPhotos(e.target.files); e.target.value = ''; }} />
             </label>
           ))}
         </div>
-        {photo && photoUrl && (
-          <div className="mt-3 flex items-center gap-3 rounded-card bg-surface-2 p-2.5">
-            <img src={photoUrl} alt={t('s05.photoAlt')} className="h-14 w-14 shrink-0 rounded-xl object-cover" />
-            <span className="min-w-0 flex-1 truncate text-xs text-text-2">{photo.name}</span>
-            <button type="button" aria-label={t('s05.photoRemove')} onClick={() => setPhoto(null)} className="grid h-11 w-11 shrink-0 place-items-center text-muted"><Icon name="x" size={18} /></button>
-          </div>
+        <p className="mt-1.5 text-[11px] text-muted">{t('s05.photoCount', { n: photos.length, max: MAX_PHOTOS })}</p>
+        {photos.length > 0 && (
+          <ul className="mt-2 space-y-2">
+            {photos.map((f, i) => (
+              <li key={i} className="flex items-center gap-3 rounded-card bg-surface-2 p-2.5">
+                {urls[i] && <img src={urls[i]} alt={t('s05.photoAlt')} className="h-14 w-14 shrink-0 rounded-xl object-cover" />}
+                <span className="min-w-0 flex-1 truncate text-xs text-text-2">{f.name}</span>
+                <button type="button" aria-label={t('s05.photoRemove')} onClick={() => setPhotos((cur) => cur.filter((_, j) => j !== i))} className="grid h-11 w-11 shrink-0 place-items-center text-muted"><Icon name="x" size={18} /></button>
+              </li>
+            ))}
+          </ul>
         )}
         <p className="mt-1 text-[11px] text-danger-text">{t('s05.photoNote')}</p>
         <h2 className="mt-5 text-base font-bold">{t('s05.note')}</h2>
-        <textarea className="input mt-3 min-h-20 py-3" maxLength={280} value={note} onChange={(e) => setNote(e.target.value)} />
+        <textarea className="input mt-3 min-h-20 py-3" maxLength={280} required aria-required="true" placeholder={t('s05.noteHint')} value={note} onChange={(e) => setNote(e.target.value)} />
         <p className="mt-3 text-[11px] text-muted">{t('s05.threshold', { n: CONFIRM_THRESHOLD })}</p>
         {err && <div className="mt-3"><ErrorBox message={err} /></div>}
       </div>
       <div className="absolute inset-x-0 bottom-[81px] z-[600] bg-gradient-to-t from-bg via-bg to-transparent px-6 pb-3 pt-6">
-        <button className="btn-primary w-full" disabled={!cat || busy} onClick={() => setConfirming(true)}>{t('s05.submit')}</button>
+        <button className="btn-primary w-full" disabled={!cat || !note.trim() || busy} onClick={() => setConfirming(true)}>{t('s05.submit')}</button>
       </div>
       <BottomNav active="report" />
       {confirming && cat && (
