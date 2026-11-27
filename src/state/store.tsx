@@ -16,8 +16,8 @@ const PREFS = 'gil-prefs';
 const Store = createContext<Ctx | null>(null);
 
 function loadPrefs(): Prefs {
-  try { const raw = localStorage.getItem(PREFS); if (raw) return { mode: 'walk', voice: false, chosen: false, ...JSON.parse(raw) as Partial<Prefs> }; } catch { /* ignore */ }
-  return { mode: 'walk', voice: false, chosen: false };
+  try { const raw = localStorage.getItem(PREFS); if (raw) return { mode: 'walk', voice: true, chosen: false, ...JSON.parse(raw) as Partial<Prefs> }; } catch { /* ignore */ }
+  return { mode: 'walk', voice: true, chosen: false }; // voice guidance is on from the first launch
 }
 
 export function StoreProvider({ children }: { children: ReactNode }) {
