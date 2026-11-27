@@ -225,7 +225,6 @@ const ko: Dict = {
   "s05.location": "지도를 움직여 핀을 위치에 맞추세요.",
   "s05.category": "어떤 문제인가요?",
   "s05.photo": "사진 (선택)",
-  "s05.photoPick": "사진 찍기 또는 선택",
   "s05.photoNote": "사람 얼굴은 찍지 마세요.",
   "s05.note": "메모 (선택)",
   "s05.threshold": "다른 {n}명이 확인하면 경로 점수에 반영돼요.",
@@ -330,5 +329,9 @@ const ko: Dict = {
   "s04.country": "국가 번호",
   "c04.viewDetails": "자세히 보기",
   "c04.hideDetails": "자세히 닫기",
+  "s05.photoAlt": "제보에 첨부한 사진",
+  "s05.photoCamera": "사진 찍기",
+  "s05.photoGallery": "갤러리에서 선택",
+  "s05.photoRemove": "사진 삭제",
 };
 export default ko;
