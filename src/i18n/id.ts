@@ -225,7 +225,6 @@ const id: Dict = {
   "s05.location": "Geser peta untuk menaruh pin di lokasi.",
   "s05.category": "Apa masalahnya?",
   "s05.photo": "Foto (opsional)",
-  "s05.photoPick": "Ambil atau pilih foto",
   "s05.photoNote": "Jangan memotret wajah orang.",
   "s05.note": "Catatan (opsional)",
   "s05.threshold": "Laporan memengaruhi skor setelah {n} orang lain mengonfirmasi.",
@@ -330,5 +329,9 @@ const id: Dict = {
   "s04.country": "Kode negara",
   "c04.viewDetails": "Lihat detail",
   "c04.hideDetails": "Sembunyikan detail",
+  "s05.photoAlt": "Foto yang dilampirkan di laporanmu",
+  "s05.photoCamera": "Ambil foto",
+  "s05.photoGallery": "Pilih dari galeri",
+  "s05.photoRemove": "Hapus foto",
 };
 export default id;
